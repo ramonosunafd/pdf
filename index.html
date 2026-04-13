@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ACH Receipt Sender — Fast Dolphin</title>
+
+<!-- ─── CONFIGURATION — fill these in once ─────────────────────────────── -->
+<script>
+const CONFIG = {
+  GOOGLE_CLIENT_ID:  '612772420367-eekqm7motrsmoue4lvesrv4sq2rvt7ll.apps.googleusercontent.com',
+  ANTHROPIC_API_KEY: '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',
+  COMPANY_NAME:      'Fast Dolphin, Inc.',
+  LOGO_URL:          'PASTE_YOUR_LOGO_DATA_URL_HERE', // filled automatically below
+};
+</script>
+<!-- ──────────────────────────────────────────────────────────────────────── -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f0;color:#1a1a18;min-height:100vh;padding:24px 16px}
+.app{max-width:820px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.card{background:#fff;border:1px solid rgba(0,0,0,0.1);border-radius:12px;padding:24px}
+h1{font-size:20px;font-weight:500}
+h2{font-size:15px;font-weight:500;margin-bottom:14px}
+p.sub{font-size:13px;color:#666;margin-top:4px}
+label{font-size:13px;font-weight:500;color:#555;display:block;margin-bottom:5px}
+input[type=text],input[type=email],textarea{width:100%;padding:9px 12px;border:1px solid rgba(0,0,0,0.22);border-radius:8px;font-size:14px;font-family:inherit;background:#fff;color:#1a1a18}
+input:focus,textarea:focus{outline:2px solid #C0392B;outline-offset:1px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border:none;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;transition:opacity .15s}
+.btn:hover{opacity:.85}.btn:disabled{opacity:.4;cursor:default}
+.btn-red{background:#C0392B;color:#fff}
+.btn-gray{background:#ebebea;color:#1a1a18}
+.btn-sm{padding:6px 12px;font-size:13px}
+.drop-zone{border:2px dashed rgba(0,0,0,0.18);border-radius:10px;padding:36px 20px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;position:relative}
+.drop-zone:hover,.dz-over{border-color:#C0392B;background:rgba(192,57,43,.04)}
+.drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.row{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-bottom:10px}
+.badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500;white-space:nowrap}
+.b-ok{background:#EAF3DE;color:#27500A}
+.b-err{background:#FCEBEB;color:#A32D2D}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:8px 10px;background:#f5f5f0;font-weight:500;border-bottom:1px solid rgba(0,0,0,0.1)}
+td{padding:8px 10px;border-bottom:1px solid rgba(0,0,0,0.07);vertical-align:top}
+tr:last-child td{border-bottom:none}
+.sb{padding:10px 14px;border-radius:8px;font-size:13px;margin-top:8px}
+.si{background:#E6F1FB;color:#185FA5}
+.so{background:#EAF3DE;color:#27500A}
+.se{background:#FCEBEB;color:#A32D2D}
+.sw{background:#FAEEDA;color:#854F0B}
+.prog-item{display:flex;align-items:center;gap:10px;font-size:13px;padding:7px 0;border-bottom:1px solid rgba(0,0,0,0.07)}
+.prog-item:last-child{border-bottom:none}
+.dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;background:#ccc}
+.d-spin{background:#EF9F27;animation:pulse .8s infinite}
+.d-ok{background:#639922}.d-err{background:#E24B4A}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.tabs{display:flex;gap:2px;margin-bottom:18px}
+.tab{padding:7px 16px;border-radius:7px;font-size:13px;cursor:pointer;color:#666;border:none;background:none}
+.tab.on{background:#ebebea;color:#1a1a18;font-weight:500}
+.div{height:1px;background:rgba(0,0,0,0.08);margin:16px 0}
+.hg{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;font-size:13px;margin-bottom:14px}
+.hl{color:#777;font-size:12px}.hv{font-weight:500}
+.alert{background:#FAEEDA;border-left:3px solid #EF9F27;padding:10px 14px;border-radius:0 6px 6px 0;font-size:13px;color:#854F0B;margin-top:10px}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(24,95,165,.3);border-top-color:#185FA5;border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle;margin-right:5px}
+@keyframes sp{to{transform:rotate(360deg)}}
+#auth-bar{display:flex;align-items:center;gap:12px;padding:10px 16px;border-radius:8px;font-size:13px}
+.contact-count{font-size:13px;color:#666;margin-bottom:12px}
+.csv-help{font-size:12px;color:#999;margin-top:6px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <div class="card" style="padding:18px 24px">
+    <div style="display:flex;align-items:center;gap:16px;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <img id="header-logo" src="" alt="Fast Dolphin" style="height:48px;display:none">
+        <div>
+          <h1>ACH Receipt Sender</h1>
+          <p class="sub">Fast Dolphin, Inc. · Split Wells Fargo batch PDFs · Send individual receipts via Gmail</p>
+        </div>
+      </div>
+      <button class="btn btn-gray btn-sm" id="auth-btn" onclick="handleAuth()">Sign in with Google</button>
+    </div>
+    <div id="auth-bar" style="margin-top:12px;background:#FAEEDA;color:#854F0B">
+      ⚠ Not signed in — click "Sign in with Google" to enable email sending
+    </div>
+  </div>
+
+  <!-- Main card -->
+  <div class="card" style="padding:16px 24px 0">
+    <div class="tabs">
+      <button class="tab on" onclick="tab('send')">Send Receipts</button>
+      <button class="tab"    onclick="tab('contacts')">Recipient List</button>
+    </div>
+
+    <!-- SEND TAB -->
+    <div id="t-send">
+      <h2>1 &nbsp;Upload Wells Fargo PDF</h2>
+      <div class="drop-zone" id="dz" ondragover="dv(event,1)" ondragleave="dv(event,0)" ondrop="dd(event)">
+        <input type="file" accept=".pdf" onchange="fp(event)">
+        <div style="font-size:28px;margin-bottom:8px">📄</div>
+        <div style="font-size:14px;color:#555">Drop PDF here or click to browse</div>
+        <div style="font-size:12px;color:#999;margin-top:4px">Wells Fargo ACH Payment Detail report</div>
+      </div>
+      <div id="ps"></div>
+      <div class="div"></div>
+      <div id="parsed" style="display:none">
+        <h2>2 &nbsp;Parsed recipients</h2>
+        <div id="hinfo" class="hg"></div>
+        <table><thead><tr><th>#</th><th>Name</th><th>Amount</th><th>Addenda</th><th>Email</th></tr></thead>
+        <tbody id="ptbody"></tbody></table>
+        <div id="mwarn"></div>
+        <div class="div"></div>
+        <h2>3 &nbsp;Email options</h2>
+        <div style="margin-bottom:12px">
+          <label>Subject line</label>
+          <input type="text" id="esubj" value="ACH Payment Receipt – {date}">
+          <div style="font-size:12px;color:#999;margin-top:4px">Placeholders: {name} {amount} {date} {payment_id}</div>
+        </div>
+        <div style="margin-bottom:16px">
+          <label>Email body (optional — leave blank for default)</label>
+          <textarea id="ebody" rows="4" placeholder="Leave blank to use the default message"></textarea>
+        </div>
+        <button class="btn btn-red" id="sbtn" onclick="sendAll()">✉ &nbsp;Generate PDFs &amp; Send via Gmail</button>
+        <div id="sstatus" style="margin-top:14px"></div>
+      </div>
+      <div style="height:16px"></div>
+    </div>
+
+    <!-- CONTACTS TAB -->
+    <div id="t-contacts" style="display:none">
+      <h2>Recipient email list</h2>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div class="contact-count" id="ccount">0 recipients saved</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <label class="btn btn-gray btn-sm" style="cursor:pointer;margin:0">
+            ↑ Import CSV
+            <input type="file" accept=".csv" style="display:none" onchange="importCSV(event)">
+          </label>
+          <button class="btn btn-gray btn-sm" onclick="exportCSV()">↓ Export CSV</button>
+          <button class="btn btn-gray btn-sm" onclick="addC()">+ Add row</button>
+        </div>
+      </div>
+      <div class="csv-help" style="margin-bottom:12px;padding:10px 12px;background:#f5f5f0;border-radius:8px">
+        <strong>CSV format:</strong> Two columns — <code>name,email</code> — one recipient per row, no header row required.<br>
+        Example: <code>Hire IT People Inc,billing@hireitpeople.com</code><br>
+        To update the list: edit your CSV file, click Import CSV. Existing entries are merged (no duplicates).
+      </div>
+      <div id="crows" style="max-height:400px;overflow-y:auto"></div>
+      <div class="div"></div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="btn btn-red btn-sm" onclick="saveC()">Save list</button>
+        <span id="smsg" style="font-size:12px;color:#27500A;display:none">✓ Saved</span>
+        <span id="import-msg" style="font-size:12px;color:#185FA5;display:none"></span>
+      </div>
+      <div style="height:16px"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const _cw = console.warn.bind(console);
+console.warn = (...a) => { if(String(a[0]).includes('fake worker')) return; _cw(...a); };
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+let contacts = [], batch = null, accessToken = null, logoDataUrl = null;
+
+/* ── logo: embed from same folder ── */
+function tryLoadLogo() {
+  // Try to load logo.png from same directory
+  const img = new Image();
+  img.onload = () => {
+    const c = document.createElement('canvas');
+    c.width = img.width; c.height = img.height;
+    c.getContext('2d').drawImage(img, 0, 0);
+    logoDataUrl = c.toDataURL('image/png');
+    const hdr = document.getElementById('header-logo');
+    hdr.src = logoDataUrl; hdr.style.display = 'block';
+  };
+  img.src = 'logo.png'; // place logo.png in same folder as index.html
+}
+
+/* ── localStorage ── */
+function loadC() {
+  try { const s=localStorage.getItem('ach_contacts'); if(s){contacts=JSON.parse(s);renderC();} } catch(e){}
+}
+function saveLS() {
+  try { localStorage.setItem('ach_contacts',JSON.stringify(contacts)); } catch(e){}
+}
+
+/* ── CSV import / export ── */
+function importCSV(e) {
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const lines = ev.target.result.split('\n').map(l=>l.trim()).filter(Boolean);
+    let added=0, skipped=0;
+    lines.forEach(line => {
+      // support comma-separated, handle quoted fields
+      const parts = line.match(/(".*?"|[^,]+)/g);
+      if (!parts || parts.length < 2) return;
+      const name  = parts[0].replace(/^"|"$/g,'').trim();
+      const email = parts[1].replace(/^"|"$/g,'').trim();
+      if (!name || !email || !email.includes('@')) { skipped++; return; }
+      // skip header row
+      if (name.toLowerCase()==='name' && email.toLowerCase()==='email') return;
+      const exists = contacts.find(c=>c.name.toLowerCase()===name.toLowerCase());
+      if (exists) { exists.email=email; skipped++; } // update existing
+      else { contacts.push({name,email}); added++; }
+    });
+    renderC(); updateCount();
+    const m=document.getElementById('import-msg');
+    m.textContent=`✓ ${added} added, ${skipped} updated/skipped`;
+    m.style.display='inline'; setTimeout(()=>m.style.display='none',4000);
+    e.target.value=''; // reset input
+  };
+  reader.readAsText(file);
+}
+function exportCSV() {
+  if (!contacts.length) { alert('No contacts to export.'); return; }
+  const rows = contacts.map(c=>`"${c.name.replace(/"/g,'""')}","${c.email.replace(/"/g,'""')}"`);
+  const csv  = 'name,email\n' + rows.join('\n');
+  const blob = new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='ach_recipients.csv'; a.click();
+}
+function updateCount() {
+  document.getElementById('ccount').textContent = `${contacts.length} recipient${contacts.length!==1?'s':''} saved`;
+}
+
+/* ── OAuth ── */
+function initAuth() {
+  if (!CONFIG.GOOGLE_CLIENT_ID||CONFIG.GOOGLE_CLIENT_ID.includes('PASTE')) {
+    setAuthBar(false,'Add your Google Client ID to the CONFIG block.'); return;
+  }
+  const hash=window.location.hash;
+  if (hash) {
+    const p=new URLSearchParams(hash.replace('#','?').replace('#','&'));
+    const t=p.get('access_token');
+    if(t){accessToken=t;window.location.hash='';setAuthBar(true,'Signed in — Gmail ready');document.getElementById('auth-btn').textContent='Refresh token';return;}
+    const err=p.get('error'); if(err) setAuthBar(false,'Auth error: '+err);
+  }
+}
+function handleAuth() {
+  if(!CONFIG.GOOGLE_CLIENT_ID||CONFIG.GOOGLE_CLIENT_ID.includes('PASTE')){alert('Add your Google Client ID first.');return;}
+  const p=new URLSearchParams({client_id:CONFIG.GOOGLE_CLIENT_ID,redirect_uri:'http://localhost:8000',response_type:'token',scope:'https://www.googleapis.com/auth/gmail.send',prompt:'consent'});
+  window.location.href='https://accounts.google.com/o/oauth2/v2/auth?'+p.toString();
+}
+function setAuthBar(ok,msg){const b=document.getElementById('auth-bar');b.style.background=ok?'#EAF3DE':'#FAEEDA';b.style.color=ok?'#27500A':'#854F0B';b.textContent=(ok?'✓ ':'⚠ ')+msg;}
+
+/* ── tabs ── */
+function tab(t){
+  document.getElementById('t-send').style.display=t==='send'?'':'none';
+  document.getElementById('t-contacts').style.display=t==='contacts'?'':'none';
+  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('on',(t==='send'&&i===0)||(t==='contacts'&&i===1)));
+  if(t==='contacts') updateCount();
+}
+
+/* ── contacts UI ── */
+function renderC(){
+  const w=document.getElementById('crows'); w.innerHTML='';
+  contacts.forEach((c,i)=>{
+    const d=document.createElement('div'); d.className='row';
+    d.innerHTML=`<div><label>Name (as in PDF)</label><input type="text" value="${x(c.name)}" oninput="contacts[${i}].name=this.value"></div>
+      <div><label>Email</label><input type="email" value="${x(c.email)}" oninput="contacts[${i}].email=this.value"></div>
+      <button class="btn btn-gray btn-sm" style="margin-bottom:2px" onclick="delC(${i})">✕</button>`;
+    w.appendChild(d);
+  });
+  updateCount();
+}
+function addC(){contacts.push({name:'',email:''});renderC();}
+function delC(i){contacts.splice(i,1);renderC();}
+function saveC(){
+  contacts=contacts.filter(c=>c.name.trim()||c.email.trim()); renderC(); saveLS();
+  const m=document.getElementById('smsg'); m.style.display='inline'; setTimeout(()=>m.style.display='none',2500);
+}
+
+/* ── drag/drop ── */
+function dv(e,on){e.preventDefault();document.getElementById('dz').classList.toggle('dz-over',!!on);}
+function dd(e){e.preventDefault();dv(e,0);go(e.dataTransfer.files[0]);}
+function fp(e){go(e.target.files[0]);}
+
+/* ── PDF text extraction ── */
+async function go(file){
+  if(!file) return;
+  batch=null; document.getElementById('parsed').style.display='none';
+  ss('ps','i','<span class="spin"></span>Extracting text from PDF…');
+  try{
+    const buf=await file.arrayBuffer();
+    const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+    const lines=[];
+    for(let p=1;p<=pdf.numPages;p++){
+      const page=await pdf.getPage(p);
+      const tc=await page.getTextContent();
+      const items=tc.items.slice().sort((a,b)=>{const dy=Math.round(b.transform[5])-Math.round(a.transform[5]);return dy!==0?dy:a.transform[4]-b.transform[4];});
+      let ly=null,row=[];
+      items.forEach(it=>{const y=Math.round(it.transform[5]);if(ly!==null&&Math.abs(y-ly)>4){if(row.length)lines.push(row.join(' '));row=[];}if(it.str.trim())row.push(it.str.trim());ly=y;});
+      if(row.length)lines.push(row.join(' '));
+    }
+    const txt=lines.filter(l=>l.trim()).join('\n');
+    ss('ps','i','<span class="spin"></span>Parsing with AI…');
+    await parse(txt);
+  }catch(e){ss('ps','e','Extraction failed: '+e.message);}
+}
+
+/* ── Claude parse ── */
+async function parse(text){
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':CONFIG.ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:
+`Extract all payment data from this Wells Fargo ACH Payment Detail report.
+Return ONLY valid JSON — no markdown, no explanation.
+
+{
+  "batch_id":"","payment_date":"","originating_account":"","company_name":"",
+  "company_id":"","payment_description":"","ach_type":"","total_amount":"","currency":"USD",
+  "recipients":[{"seq":1,"name":"","bank_routing":"","account_number":"","amount":"","account_type":"","addenda":""}]
+}
+
+REPORT TEXT:
+${text.slice(0,3000)}`}]})
+    });
+    const data=await res.json();
+    if(data.error) throw new Error(data.error.message);
+    const raw=data.content.map(c=>c.text||'').join('');
+    batch=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    renderBatch();
+    ss('ps','o',`✓ Parsed ${batch.recipients.length} recipient${batch.recipients.length!==1?'s':''}`);
+  }catch(e){ss('ps','e','AI parse failed: '+e.message);}
+}
+
+/* ── render parsed ── */
+function renderBatch(){
+  const b=batch;
+  document.getElementById('hinfo').innerHTML=`
+    <div><div class="hl">Payment ID</div><div class="hv">${x(b.batch_id)}</div></div>
+    <div><div class="hl">Payment date</div><div class="hv">${x(b.payment_date)}</div></div>
+    <div><div class="hl">Company</div><div class="hv">${x(b.company_name||CONFIG.COMPANY_NAME)}</div></div>
+    <div><div class="hl">ACH type</div><div class="hv">${x(b.ach_type)} · ${x(b.payment_description)}</div></div>
+    <div><div class="hl">Originating account</div><div class="hv">${x(b.originating_account)}</div></div>`;
+  const tb=document.getElementById('ptbody'); tb.innerHTML='';
+  const unmatched=[];
+  (b.recipients||[]).forEach(r=>{
+    const c=findC(r.name); if(!c) unmatched.push(r.name);
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${r.seq}</td><td>${x(r.name)}</td><td><strong>${fmt(r.amount)} ${x(b.currency)}</strong></td><td>${x(r.addenda)}</td>
+      <td>${c?`<span class="badge b-ok">✓ ${x(c.email)}</span>`:`<span class="badge b-err">No email</span>`}</td>`;
+    tb.appendChild(tr);
+  });
+  document.getElementById('mwarn').innerHTML=unmatched.length
+    ?`<div class="alert">⚠ No email for: <strong>${unmatched.join(', ')}</strong>. Add them in Recipient List tab.</div>`:'';
+  document.getElementById('esubj').value=`ACH Payment Receipt – ${b.payment_date||'{date}'}`;
+  document.getElementById('parsed').style.display='';
+}
+
+/* ── format currency ── */
+function fmt(val){
+  const n=parseFloat(String(val).replace(/[^0-9.]/g,''));
+  if(isNaN(n)) return val;
+  return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+/* ── PDF generation ── */
+function mkPDF(r,b){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'pt',format:'letter'});
+  const W=612,M=48,co=CONFIG.COMPANY_NAME||b.company_name||'';
+
+  // Red header bar
+  doc.setFillColor(192,57,43); doc.rect(0,0,W,60,'F');
+
+  // Logo in header if available
+  if(logoDataUrl){
+    try{ doc.addImage(logoDataUrl,'PNG',M,8,44,44); }catch(e){}
+    doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont('helvetica','bold');
+    doc.text(co,M+54,30);
+    doc.setFontSize(9); doc.setFont('helvetica','normal');
+    doc.text('ACH PAYMENT RECEIPT',W-M,30,{align:'right'});
+    doc.setFontSize(8); doc.text('GREAT TALENT, BETTER RESULTS',M+54,44);
+  } else {
+    doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont('helvetica','bold');
+    doc.text(co,M,35);
+    doc.setFontSize(9); doc.setFont('helvetica','normal');
+    doc.text('ACH PAYMENT RECEIPT',W-M,35,{align:'right'});
+  }
+
+  // Light gray sub-bar
+  doc.setFillColor(245,245,242); doc.rect(0,60,W,26,'F');
+  doc.setTextColor(80,80,80); doc.setFontSize(8.5);
+  doc.text(`Batch: ${b.batch_id||''}`,M,77);
+  doc.text(`Payment Date: ${b.payment_date||''}`,W/2,77,{align:'center'});
+  doc.text(`Generated: ${new Date().toLocaleDateString('en-US')}`,W-M,77,{align:'right'});
+
+  let y=104;
+
+  // Payment details (no total amount)
+  st(doc,'Payment Details',M,y,W-M*2); y+=22;
+  [['Originating Account',b.originating_account||''],
+   ['Company ID',b.company_id||''],
+   ['ACH Type',b.ach_type||''],
+   ['Description',b.payment_description||'']]
+  .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;if(i%2===0&&i>0)y+=38;fld(doc,l,v,col,y,W/2-M-16);}); y+=52;
+
+  doc.setDrawColor(192,57,43); doc.setLineWidth(0.5); doc.line(M,y,W-M,y); y+=16;
+
+  // Recipient details
+  st(doc,'Recipient Details',M,y,W-M*2); y+=22;
+  [['Recipient Name',r.name||''],
+   ['Account Number','****'+String(r.account_number||'').slice(-4)],
+   ['Bank Routing',r.bank_routing||''],
+   ['Account Type',r.account_type||''],
+   ['Reference / Addenda',r.addenda||'']]
+  .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;if(i%2===0&&i>0)y+=38;fld(doc,l,v,col,y,W/2-M-16);}); y+=52;
+
+  // Amount box
+  doc.setFillColor(253,242,240); doc.roundedRect(M,y,W-M*2,64,6,6,'F');
+  doc.setDrawColor(192,57,43); doc.setLineWidth(0.5); doc.roundedRect(M,y,W-M*2,64,6,6,'S');
+  doc.setTextColor(192,57,43); doc.setFontSize(10); doc.setFont('helvetica','normal');
+  doc.text('Amount Sent',W/2,y+20,{align:'center'});
+  doc.setFontSize(26); doc.setFont('helvetica','bold');
+  doc.text(`${fmt(r.amount)} ${b.currency||'USD'}`,W/2,y+50,{align:'center'}); y+=80;
+
+  // Status badge
+  doc.setFillColor(192,57,43); doc.roundedRect(W/2-46,y,92,22,4,4,'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(8.5); doc.setFont('helvetica','bold');
+  doc.text('PROCESSED',W/2,y+14,{align:'center'});
+
+  // Footer
+  doc.setDrawColor(210,210,210); doc.setLineWidth(0.3); doc.line(M,748,W-M,748);
+  doc.setTextColor(160,160,160); doc.setFontSize(7.5); doc.setFont('helvetica','normal');
+  doc.text('Fast Dolphin, Inc. · Automated payment receipt · Contact your payment administrator with questions.',W/2,760,{align:'center'});
+
+  return doc.output('arraybuffer');
+}
+function st(doc,t,x,y,w){doc.setFillColor(245,242,242);doc.rect(x,y-11,w,17,'F');doc.setTextColor(192,57,43);doc.setFontSize(8.5);doc.setFont('helvetica','bold');doc.text(t.toUpperCase(),x+6,y);}
+function fld(doc,l,v,x,y,mw){doc.setTextColor(130,130,130);doc.setFontSize(8);doc.setFont('helvetica','normal');doc.text(l,x,y);doc.setTextColor(30,30,30);doc.setFontSize(10.5);doc.setFont('helvetica','bold');doc.text(doc.splitTextToSize(String(v),mw),x,y+13);}
+
+/* ── Gmail send ── */
+async function gmailSend(to,subject,bodyText,pdfBuf,filename){
+  if(!accessToken) throw new Error('Not signed in — click Sign in with Google');
+  const boundary='achrec_'+Date.now();
+  const bytes=new Uint8Array(pdfBuf);
+  let bin=''; for(let i=0;i<bytes.length;i++) bin+=String.fromCharCode(bytes[i]);
+  const b64=btoa(bin);
+  const mime=[`From: me`,`To: ${to}`,`Subject: ${subject}`,`MIME-Version: 1.0`,
+    `Content-Type: multipart/mixed; boundary="${boundary}"`,``,
+    `--${boundary}`,`Content-Type: text/plain; charset="UTF-8"`,``,bodyText,``,
+    `--${boundary}`,`Content-Type: application/pdf; name="${filename}"`,
+    `Content-Transfer-Encoding: base64`,`Content-Disposition: attachment; filename="${filename}"`,``,b64,``,
+    `--${boundary}--`].join('\r\n');
+  const encoded=btoa(unescape(encodeURIComponent(mime))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  const res=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{
+    method:'POST',headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},
+    body:JSON.stringify({raw:encoded})
+  });
+  if(!res.ok){const err=await res.json();throw new Error(err.error?.message||'Gmail error '+res.status);}
+  return await res.json();
+}
+
+/* ── send all ── */
+async function sendAll(){
+  if(!batch) return;
+  const btn=document.getElementById('sbtn'); btn.disabled=true;
+  const tpl=document.getElementById('esubj').value||'ACH Payment Receipt';
+  const customBody=document.getElementById('ebody').value.trim();
+  const recs=batch.recipients.map(r=>({...r,contact:findC(r.name)}));
+  const wrap=document.getElementById('sstatus');
+  wrap.innerHTML='<div>'+recs.map((r,i)=>`
+    <div class="prog-item" id="pi${i}">
+      <div class="dot" id="dot${i}"></div>
+      <div style="flex:1"><strong>${x(r.name)}</strong> — ${r.contact?x(r.contact.email):'<span style="color:#A32D2D">No email</span>'}</div>
+      <div id="m${i}" style="font-size:12px;color:#888"></div>
+    </div>`).join('')+'</div>';
+  let sent=0,failed=0;
+  for(let i=0;i<recs.length;i++){
+    const r=recs[i]; dot(i,'spin');
+    if(!r.contact?.email){dot(i,'err');msg(i,'Skipped — no email');failed++;continue;}
+    try{
+      const pdfBuf=mkPDF(r,batch);
+      const subj=tpl.replace('{name}',r.name).replace('{amount}',fmt(r.amount)).replace('{date}',batch.payment_date||'').replace('{payment_id}',batch.batch_id||'');
+      const fname=`ACH_Receipt_${r.name.replace(/\s+/g,'_')}_${(batch.payment_date||'').replace(/\//g,'-')}.pdf`;
+      const body=customBody||`Dear ${r.name},\n\nPlease find attached your ACH payment receipt for ${fmt(r.amount)} ${batch.currency||'USD'} processed on ${batch.payment_date||''}.\n\nPayment Reference: ${batch.batch_id||''}\nAddenda: ${r.addenda||''}\n\nFor questions, please contact us.\n\nFast Dolphin, Inc.`;
+      await gmailSend(r.contact.email,subj,body,pdfBuf,fname);
+      dot(i,'ok'); msg(i,'Sent ✓'); sent++;
+    }catch(e){dot(i,'err');msg(i,e.message);failed++;}
+  }
+  const s=document.createElement('div');
+  s.className='sb '+(failed===0?'so':sent>0?'sw':'se');
+  s.innerHTML=failed===0?`✓ All ${sent} receipts sent`:`${sent} sent · ${failed} failed or skipped`;
+  wrap.appendChild(s); btn.disabled=false;
+}
+
+/* ── helpers ── */
+function findC(n){if(!n)return null;return contacts.find(c=>c.name.trim().toLowerCase()===n.trim().toLowerCase())||null;}
+function ss(id,t,m){const cls={i:'si',o:'so',e:'se',w:'sw'}[t];document.getElementById(id).innerHTML=`<div class="sb ${cls}">${m}</div>`;}
+function dot(i,s){document.getElementById('dot'+i).className='dot d-'+s;}
+function msg(i,t){document.getElementById('m'+i).textContent=t;}
+function x(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+window.addEventListener('load',()=>{loadC();initAuth();tryLoadLogo();});
+</script>
+</body>
+</html>
