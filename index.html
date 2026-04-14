@@ -8,8 +8,8 @@
 <!-- ─── CONFIGURATION — fill these in once ─────────────────────────────── -->
 <script>
 const CONFIG = {
-  GOOGLE_CLIENT_ID:  '612772420367-eekqm7motrsmoue4lvesrv4sq2rvt7ll.apps.googleusercontent.com',
-  ANTHROPIC_API_KEY: '',
+  GOOGLE_CLIENT_ID:  'PASTE_YOUR_CLIENT_ID_HERE',
+  ANTHROPIC_API_KEY: 'PASTE_YOUR_ANTHROPIC_KEY_HERE',
   COMPANY_NAME:      'Fast Dolphin, Inc.',
   LOGO_URL:          'PASTE_YOUR_LOGO_DATA_URL_HERE', // filled automatically below
 };
@@ -84,7 +84,13 @@ tr:last-child td{border-bottom:none}
           <p class="sub">Fast Dolphin, Inc. · Split Wells Fargo batch PDFs · Send individual receipts via Gmail</p>
         </div>
       </div>
-      <button class="btn btn-gray btn-sm" id="auth-btn" onclick="handleAuth()">Sign in with Google</button>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="display:flex;align-items:center;gap:6px;background:#f5f5f0;border:1px solid rgba(0,0,0,0.15);border-radius:8px;padding:5px 10px">
+          <span style="font-size:11px;color:#888">🔑</span>
+          <input type="password" id="api-key-input" placeholder="API Key (sk-ant-...)" oninput="CONFIG.ANTHROPIC_API_KEY=this.value" style="border:none;background:transparent;font-size:12px;color:#1a1a18;width:160px;font-family:monospace;outline:none">
+        </div>
+        <button class="btn btn-gray btn-sm" id="auth-btn" onclick="handleAuth()">Sign in with Google</button>
+      </div>
     </div>
     <div id="auth-bar" style="margin-top:12px;background:#FAEEDA;color:#854F0B">
       ⚠ Not signed in — click "Sign in with Google" to enable email sending
@@ -248,7 +254,7 @@ function initAuth() {
 }
 function handleAuth() {
   if(!CONFIG.GOOGLE_CLIENT_ID||CONFIG.GOOGLE_CLIENT_ID.includes('PASTE')){alert('Add your Google Client ID first.');return;}
-  const p=new URLSearchParams({client_id:CONFIG.GOOGLE_CLIENT_ID,redirect_uri:'https://ramonosunafd.github.io/pdf/',response_type:'token',scope:'https://www.googleapis.com/auth/gmail.send',prompt:'consent'});
+  const p=new URLSearchParams({client_id:CONFIG.GOOGLE_CLIENT_ID,redirect_uri:'http://localhost:8000',response_type:'token',scope:'https://www.googleapis.com/auth/gmail.send',prompt:'consent'});
   window.location.href='https://accounts.google.com/o/oauth2/v2/auth?'+p.toString();
 }
 function setAuthBar(ok,msg){const b=document.getElementById('auth-bar');b.style.background=ok?'#EAF3DE':'#FAEEDA';b.style.color=ok?'#27500A':'#854F0B';b.textContent=(ok?'✓ ':'⚠ ')+msg;}
