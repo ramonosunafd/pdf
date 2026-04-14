@@ -3,26 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ACH Receipt Sender — Fast Dolphin</title>
-
-<!-- ─── CONFIGURATION — fill these in once ─────────────────────────────── -->
+<title>ACH + Wire Receipt Sender — Fast Dolphin</title>
 <script>
 const CONFIG = {
   GOOGLE_CLIENT_ID:  '612772420367-eekqm7motrsmoue4lvesrv4sq2rvt7ll.apps.googleusercontent.com',
   ANTHROPIC_API_KEY: '',
   COMPANY_NAME:      'Fast Dolphin, Inc.',
-  LOGO_URL:          '',
 };
 </script>
-<!-- ──────────────────────────────────────────────────────────────────────── -->
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f0;color:#1a1a18;min-height:100vh;padding:24px 16px}
-.app{max-width:820px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.app{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
 .card{background:#fff;border:1px solid rgba(0,0,0,0.1);border-radius:12px;padding:24px}
 h1{font-size:20px;font-weight:500}
 h2{font-size:15px;font-weight:500;margin-bottom:14px}
@@ -33,15 +27,18 @@ input:focus,textarea:focus{outline:2px solid #C0392B;outline-offset:1px}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border:none;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;transition:opacity .15s}
 .btn:hover{opacity:.85}.btn:disabled{opacity:.4;cursor:default}
 .btn-red{background:#C0392B;color:#fff}
+.btn-blue{background:#1A56A0;color:#fff}
 .btn-gray{background:#ebebea;color:#1a1a18}
 .btn-sm{padding:6px 12px;font-size:13px}
 .drop-zone{border:2px dashed rgba(0,0,0,0.18);border-radius:10px;padding:36px 20px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;position:relative}
-.drop-zone:hover,.dz-over{border-color:#C0392B;background:rgba(192,57,43,.04)}
+.drop-zone:hover,.dz-over{border-color:#1A56A0;background:rgba(26,86,160,.04)}
 .drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
 .row{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-bottom:10px}
 .badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500;white-space:nowrap}
 .b-ok{background:#EAF3DE;color:#27500A}
 .b-err{background:#FCEBEB;color:#A32D2D}
+.b-ach{background:#FDECEA;color:#922B21}
+.b-wire{background:#EBF5FB;color:#154360}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:left;padding:8px 10px;background:#f5f5f0;font-weight:500;border-bottom:1px solid rgba(0,0,0,0.1)}
 td{padding:8px 10px;border-bottom:1px solid rgba(0,0,0,0.07);vertical-align:top}
@@ -68,7 +65,10 @@ tr:last-child td{border-bottom:none}
 @keyframes sp{to{transform:rotate(360deg)}}
 #auth-bar{display:flex;align-items:center;gap:12px;padding:10px 16px;border-radius:8px;font-size:13px}
 .contact-count{font-size:13px;color:#666;margin-bottom:12px}
-.csv-help{font-size:12px;color:#999;margin-top:6px;line-height:1.5}
+.csv-help{font-size:12px;color:#999;line-height:1.5}
+.type-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;margin-bottom:12px}
+.type-ach{background:#FDECEA;color:#922B21}
+.type-wire{background:#EBF5FB;color:#154360}
 </style>
 </head>
 <body>
@@ -80,8 +80,8 @@ tr:last-child td{border-bottom:none}
       <div style="display:flex;align-items:center;gap:14px">
         <img id="header-logo" src="" alt="Fast Dolphin" style="height:48px;display:none">
         <div>
-          <h1>ACH Receipt Sender</h1>
-          <p class="sub">Fast Dolphin, Inc. · Split Wells Fargo batch PDFs · Send individual receipts via Gmail</p>
+          <h1>Payment Receipt Sender</h1>
+          <p class="sub">Fast Dolphin, Inc. · ACH &amp; Wire payments · Send individual receipts via Gmail</p>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
@@ -107,25 +107,27 @@ tr:last-child td{border-bottom:none}
     <!-- SEND TAB -->
     <div id="t-send">
       <h2>1 &nbsp;Upload Wells Fargo PDF</h2>
+      <p style="font-size:13px;color:#666;margin-bottom:12px">Supports both ACH Payment Detail and Wire Payment Detail reports — auto-detected.</p>
       <div class="drop-zone" id="dz" ondragover="dv(event,1)" ondragleave="dv(event,0)" ondrop="dd(event)">
         <input type="file" accept=".pdf" onchange="fp(event)">
         <div style="font-size:28px;margin-bottom:8px">📄</div>
         <div style="font-size:14px;color:#555">Drop PDF here or click to browse</div>
-        <div style="font-size:12px;color:#999;margin-top:4px">Wells Fargo ACH Payment Detail report</div>
+        <div style="font-size:12px;color:#999;margin-top:4px">Wells Fargo ACH or Wire Payment Detail report</div>
       </div>
       <div id="ps"></div>
       <div class="div"></div>
       <div id="parsed" style="display:none">
         <h2>2 &nbsp;Parsed recipients</h2>
+        <div id="type-indicator"></div>
         <div id="hinfo" class="hg"></div>
-        <table><thead><tr><th>#</th><th>Name</th><th>Amount</th><th>Addenda</th><th>Email</th></tr></thead>
+        <table><thead><tr><th>#</th><th>Name</th><th>Amount</th><th id="col3-hdr">Addenda</th><th>Email</th></tr></thead>
         <tbody id="ptbody"></tbody></table>
         <div id="mwarn"></div>
         <div class="div"></div>
         <h2>3 &nbsp;Email options</h2>
         <div style="margin-bottom:12px">
           <label>Subject line</label>
-          <input type="text" id="esubj" value="ACH Payment Receipt - {date}">
+          <input type="text" id="esubj" value="Payment Receipt - {date}">
           <div style="font-size:12px;color:#999;margin-top:4px">Placeholders: {name} {amount} {date} {payment_id}</div>
         </div>
         <div style="margin-bottom:16px">
@@ -153,9 +155,8 @@ tr:last-child td{border-bottom:none}
         </div>
       </div>
       <div class="csv-help" style="margin-bottom:12px;padding:10px 12px;background:#f5f5f0;border-radius:8px">
-        <strong>CSV format:</strong> Two columns — <code>name,email</code> — one recipient per row, no header row required.<br>
-        Example: <code>Hire IT People Inc,billing@hireitpeople.com</code><br>
-        To update the list: edit your CSV file, click Import CSV. Existing entries are merged (no duplicates).
+        <strong>CSV format:</strong> Two columns — <code>name,email</code> — one recipient per row.<br>
+        Example: <code>Hire IT People Inc,billing@hireitpeople.com</code>
       </div>
       <div id="crows" style="max-height:400px;overflow-y:auto"></div>
       <div class="div"></div>
@@ -170,86 +171,81 @@ tr:last-child td{border-bottom:none}
 </div>
 
 <script>
-const _cw = console.warn.bind(console);
-console.warn = (...a) => { if(String(a[0]).includes('fake worker')) return; _cw(...a); };
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const _cw=console.warn.bind(console);
+console.warn=(...a)=>{if(String(a[0]).includes('fake worker'))return;_cw(...a);};
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-let contacts = [], batch = null, accessToken = null, logoDataUrl = null;
+let contacts=[],batch=null,accessToken=null,logoDataUrl=null,docType='ach';
 
 /* ── logo ── */
-function tryLoadLogo() {
-  const img = new Image();
-  img.onload = () => {
-    const c = document.createElement('canvas');
-    c.width = img.width; c.height = img.height;
-    c.getContext('2d').drawImage(img, 0, 0);
-    logoDataUrl = c.toDataURL('image/png');
-    const hdr = document.getElementById('header-logo');
-    hdr.src = logoDataUrl; hdr.style.display = 'block';
+function tryLoadLogo(){
+  const img=new Image();
+  img.onload=()=>{
+    const c=document.createElement('canvas');
+    c.width=img.width;c.height=img.height;
+    c.getContext('2d').drawImage(img,0,0);
+    logoDataUrl=c.toDataURL('image/png');
+    const hdr=document.getElementById('header-logo');
+    hdr.src=logoDataUrl;hdr.style.display='block';
   };
-  img.src = 'logo.png';
+  img.src='logo.png';
 }
 
 /* ── localStorage ── */
-function loadC() {
-  try { const s=localStorage.getItem('ach_contacts'); if(s){contacts=JSON.parse(s);renderC();} } catch(e){}
-}
-function saveLS() {
-  try { localStorage.setItem('ach_contacts',JSON.stringify(contacts)); } catch(e){}
-}
+function loadC(){try{const s=localStorage.getItem('ach_contacts');if(s){contacts=JSON.parse(s);renderC();}}catch(e){}}
+function saveLS(){try{localStorage.setItem('ach_contacts',JSON.stringify(contacts));}catch(e){}}
 
-/* ── CSV import / export ── */
-function importCSV(e) {
-  const file = e.target.files[0]; if(!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    const lines = ev.target.result.split('\n').map(l=>l.trim()).filter(Boolean);
-    let added=0, skipped=0;
-    lines.forEach(line => {
-      const parts = line.match(/(".*?"|[^,]+)/g);
-      if (!parts || parts.length < 2) return;
-      const name  = parts[0].replace(/^"|"$/g,'').trim();
-      const email = parts[1].replace(/^"|"$/g,'').trim();
-      if (!name || !email || !email.includes('@')) { skipped++; return; }
-      if (name.toLowerCase()==='name' && email.toLowerCase()==='email') return;
-      const exists = contacts.find(c=>c.name.toLowerCase()===name.toLowerCase());
-      if (exists) { exists.email=email; skipped++; }
-      else { contacts.push({name,email}); added++; }
+/* ── CSV ── */
+function importCSV(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const lines=ev.target.result.split('\n').map(l=>l.trim()).filter(Boolean);
+    let added=0,skipped=0;
+    lines.forEach(line=>{
+      const parts=line.match(/(".*?"|[^,]+)/g);
+      if(!parts||parts.length<2)return;
+      const name=parts[0].replace(/^"|"$/g,'').trim();
+      const email=parts[1].replace(/^"|"$/g,'').trim();
+      if(!name||!email||!email.includes('@')){skipped++;return;}
+      if(name.toLowerCase()==='name'&&email.toLowerCase()==='email')return;
+      const exists=contacts.find(c=>c.name.toLowerCase()===name.toLowerCase());
+      if(exists){exists.email=email;skipped++;}else{contacts.push({name,email});added++;}
     });
-    renderC(); updateCount();
+    renderC();updateCount();
     const m=document.getElementById('import-msg');
     m.textContent=`✓ ${added} added, ${skipped} updated/skipped`;
-    m.style.display='inline'; setTimeout(()=>m.style.display='none',4000);
+    m.style.display='inline';setTimeout(()=>m.style.display='none',4000);
     e.target.value='';
   };
   reader.readAsText(file);
 }
-function exportCSV() {
-  if (!contacts.length) { alert('No contacts to export.'); return; }
-  const rows = contacts.map(c=>`"${c.name.replace(/"/g,'""')}","${c.email.replace(/"/g,'""')}"`);
-  const csv  = 'name,email\n' + rows.join('\n');
-  const blob = new Blob([csv],{type:'text/csv'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download='ach_recipients.csv'; a.click();
+function exportCSV(){
+  if(!contacts.length){alert('No contacts to export.');return;}
+  const rows=contacts.map(c=>`"${c.name.replace(/"/g,'""')}","${c.email.replace(/"/g,'""')}"`);
+  const csv='name,email\n'+rows.join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='ach_recipients.csv';a.click();
 }
-function updateCount() {
-  document.getElementById('ccount').textContent = `${contacts.length} recipient${contacts.length!==1?'s':''} saved`;
+function updateCount(){
+  document.getElementById('ccount').textContent=`${contacts.length} recipient${contacts.length!==1?'s':''} saved`;
 }
 
 /* ── OAuth ── */
-function initAuth() {
-  if (!CONFIG.GOOGLE_CLIENT_ID||CONFIG.GOOGLE_CLIENT_ID.includes('PASTE')) {
-    setAuthBar(false,'Add your Google Client ID to the CONFIG block.'); return;
+function initAuth(){
+  if(!CONFIG.GOOGLE_CLIENT_ID||CONFIG.GOOGLE_CLIENT_ID.includes('PASTE')){
+    setAuthBar(false,'Add your Google Client ID to the CONFIG block.');return;
   }
   const hash=window.location.hash;
-  if (hash) {
+  if(hash){
     const p=new URLSearchParams(hash.replace('#','?').replace('#','&'));
     const t=p.get('access_token');
     if(t){accessToken=t;window.location.hash='';setAuthBar(true,'Signed in — Gmail ready');document.getElementById('auth-btn').textContent='Refresh token';return;}
-    const err=p.get('error'); if(err) setAuthBar(false,'Auth error: '+err);
+    const err=p.get('error');if(err)setAuthBar(false,'Auth error: '+err);
   }
 }
-function handleAuth() {
+function handleAuth(){
   if(!CONFIG.GOOGLE_CLIENT_ID||CONFIG.GOOGLE_CLIENT_ID.includes('PASTE')){alert('Add your Google Client ID first.');return;}
   const p=new URLSearchParams({client_id:CONFIG.GOOGLE_CLIENT_ID,redirect_uri:'https://ramonosunafd.github.io/pdf/',response_type:'token',scope:'https://www.googleapis.com/auth/gmail.send',prompt:'consent'});
   window.location.href='https://accounts.google.com/o/oauth2/v2/auth?'+p.toString();
@@ -261,14 +257,14 @@ function tab(t){
   document.getElementById('t-send').style.display=t==='send'?'':'none';
   document.getElementById('t-contacts').style.display=t==='contacts'?'':'none';
   document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('on',(t==='send'&&i===0)||(t==='contacts'&&i===1)));
-  if(t==='contacts') updateCount();
+  if(t==='contacts')updateCount();
 }
 
 /* ── contacts UI ── */
 function renderC(){
-  const w=document.getElementById('crows'); w.innerHTML='';
+  const w=document.getElementById('crows');w.innerHTML='';
   contacts.forEach((c,i)=>{
-    const d=document.createElement('div'); d.className='row';
+    const d=document.createElement('div');d.className='row';
     d.innerHTML=`<div><label>Name (as in PDF)</label><input type="text" value="${x(c.name)}" oninput="contacts[${i}].name=this.value"></div>
       <div><label>Email</label><input type="email" value="${x(c.email)}" oninput="contacts[${i}].email=this.value"></div>
       <button class="btn btn-gray btn-sm" style="margin-bottom:2px" onclick="delC(${i})">✕</button>`;
@@ -279,8 +275,8 @@ function renderC(){
 function addC(){contacts.push({name:'',email:''});renderC();}
 function delC(i){contacts.splice(i,1);renderC();}
 function saveC(){
-  contacts=contacts.filter(c=>c.name.trim()||c.email.trim()); renderC(); saveLS();
-  const m=document.getElementById('smsg'); m.style.display='inline'; setTimeout(()=>m.style.display='none',2500);
+  contacts=contacts.filter(c=>c.name.trim()||c.email.trim());renderC();saveLS();
+  const m=document.getElementById('smsg');m.style.display='inline';setTimeout(()=>m.style.display='none',2500);
 }
 
 /* ── drag/drop ── */
@@ -290,8 +286,8 @@ function fp(e){go(e.target.files[0]);}
 
 /* ── PDF text extraction ── */
 async function go(file){
-  if(!file) return;
-  batch=null; document.getElementById('parsed').style.display='none';
+  if(!file)return;
+  batch=null;document.getElementById('parsed').style.display='none';
   ss('ps','i','<span class="spin"></span>Extracting text from PDF...');
   try{
     const buf=await file.arrayBuffer();
@@ -306,18 +302,49 @@ async function go(file){
       if(row.length)lines.push(row.join(' '));
     }
     const txt=lines.filter(l=>l.trim()).join('\n');
-    ss('ps','i','<span class="spin"></span>Parsing with AI...');
+    // Auto-detect document type
+    docType=txt.toLowerCase().includes('wire')||txt.toLowerCase().includes('payment id')&&txt.toLowerCase().includes('beneficiary')?'wire':'ach';
+    ss('ps','i',`<span class="spin"></span>Parsing ${docType.toUpperCase()} document with AI...`);
     await parse(txt);
   }catch(e){ss('ps','e','Extraction failed: '+e.message);}
 }
 
 /* ── Claude parse ── */
 async function parse(text){
-  try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':CONFIG.ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:
+  const isWire=docType==='wire';
+  const prompt=isWire?
+`Extract all wire payment data from this Wells Fargo Wire Payment Detail report.
+Return ONLY valid JSON — no markdown, no explanation.
+
+{
+  "payment_date": "",
+  "originating_account": "",
+  "company_name": "",
+  "currency": "USD",
+  "recipients": [
+    {
+      "seq": 1,
+      "payment_id": "",
+      "swift_confirmation": "",
+      "trn_confirmation": "",
+      "name": "",
+      "address": "",
+      "country": "",
+      "account_number": "",
+      "bank_name": "",
+      "bank_address": "",
+      "bank_bic": "",
+      "amount": "",
+      "value_date": "",
+      "purpose": "",
+      "addenda": ""
+    }
+  ]
+}
+
+REPORT TEXT:
+${text.slice(0,6000)}`
+:
 `Extract all payment data from this Wells Fargo ACH Payment Detail report.
 Return ONLY valid JSON — no markdown, no explanation.
 
@@ -328,136 +355,247 @@ Return ONLY valid JSON — no markdown, no explanation.
 }
 
 REPORT TEXT:
-${text.slice(0,3000)}`}]})
+${text.slice(0,3000)}`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':CONFIG.ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,messages:[{role:'user',content:prompt}]})
     });
     const data=await res.json();
-    if(data.error) throw new Error(data.error.message);
+    if(data.error)throw new Error(data.error.message);
     const raw=data.content.map(c=>c.text||'').join('');
     batch=JSON.parse(raw.replace(/```json|```/g,'').trim());
     renderBatch();
-    ss('ps','o',`Parsed ${batch.recipients.length} recipient${batch.recipients.length!==1?'s':''}`);
+    ss('ps','o',`✓ Parsed ${batch.recipients.length} ${docType.toUpperCase()} recipient${batch.recipients.length!==1?'s':''}`);
   }catch(e){ss('ps','e','AI parse failed: '+e.message);}
 }
 
 /* ── render parsed ── */
 function renderBatch(){
   const b=batch;
-  document.getElementById('hinfo').innerHTML=`
-    <div><div class="hl">Payment ID</div><div class="hv">${x(b.batch_id)}</div></div>
-    <div><div class="hl">Payment date</div><div class="hv">${x(b.payment_date)}</div></div>
-    <div><div class="hl">Company</div><div class="hv">${x(b.company_name||CONFIG.COMPANY_NAME)}</div></div>
-    <div><div class="hl">ACH type</div><div class="hv">${x(b.ach_type)} · ${x(b.payment_description)}</div></div>
-    <div><div class="hl">Originating account</div><div class="hv">${x(b.originating_account)}</div></div>`;
-  const tb=document.getElementById('ptbody'); tb.innerHTML='';
+  const isWire=docType==='wire';
+  const accentColor=isWire?'#1A56A0':'#C0392B';
+
+  // Type indicator pill
+  document.getElementById('type-indicator').innerHTML=
+    `<div class="type-pill ${isWire?'type-wire':'type-ach'}">${isWire?'🔵 Wire Transfer':'🔴 ACH Payment'}</div>`;
+
+  // Update send button color
+  const sbtn=document.getElementById('sbtn');
+  sbtn.className=`btn ${isWire?'btn-blue':'btn-red'}`;
+
+  // Header info
+  if(isWire){
+    document.getElementById('hinfo').innerHTML=`
+      <div><div class="hl">Payment date</div><div class="hv">${x(b.payment_date)}</div></div>
+      <div><div class="hl">Company</div><div class="hv">${x(b.company_name||CONFIG.COMPANY_NAME)}</div></div>
+      <div><div class="hl">Originating account</div><div class="hv">${x(b.originating_account)}</div></div>
+      <div><div class="hl">Recipients</div><div class="hv">${b.recipients.length}</div></div>`;
+  } else {
+    document.getElementById('hinfo').innerHTML=`
+      <div><div class="hl">Payment ID</div><div class="hv">${x(b.batch_id)}</div></div>
+      <div><div class="hl">Payment date</div><div class="hv">${x(b.payment_date)}</div></div>
+      <div><div class="hl">Company</div><div class="hv">${x(b.company_name||CONFIG.COMPANY_NAME)}</div></div>
+      <div><div class="hl">ACH type</div><div class="hv">${x(b.ach_type)} · ${x(b.payment_description)}</div></div>
+      <div><div class="hl">Originating account</div><div class="hv">${x(b.originating_account)}</div></div>`;
+  }
+
+  // Table header col 3
+  document.getElementById('col3-hdr').textContent=isWire?'Purpose':'Addenda';
+
+  const tb=document.getElementById('ptbody');tb.innerHTML='';
   const unmatched=[];
   (b.recipients||[]).forEach(r=>{
-    const c=findC(r.name); if(!c) unmatched.push(r.name);
+    const c=findC(r.name);if(!c)unmatched.push(r.name);
+    const col3=isWire?x(r.purpose||''):x(r.addenda||'');
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td>${r.seq}</td><td>${x(r.name)}</td><td><strong>${fmt(r.amount)} ${x(b.currency)}</strong></td><td>${x(r.addenda)}</td>
+    tr.innerHTML=`<td>${r.seq}</td><td>${x(r.name)}</td><td><strong>${fmt(r.amount)} ${x(b.currency)}</strong></td><td>${col3}</td>
       <td>${c?`<span class="badge b-ok">✓ ${x(c.email)}</span>`:`<span class="badge b-err">No email</span>`}</td>`;
     tb.appendChild(tr);
   });
   document.getElementById('mwarn').innerHTML=unmatched.length
-    ?`<div class="alert">No email for: <strong>${unmatched.join(', ')}</strong>. Add them in Recipient List tab.</div>`:'';
-  // FIX 1: plain hyphen instead of em dash to avoid encoding issues
-  document.getElementById('esubj').value=`ACH Payment Receipt - ${b.payment_date||'{date}'}`;
+    ?`<div class="alert">⚠ No email for: <strong>${unmatched.join(', ')}</strong>. Add them in Recipient List tab.</div>`:'';
+
+  const dateStr=isWire?(b.payment_date||b.recipients[0]?.value_date||'{date}'):b.payment_date||'{date}';
+  document.getElementById('esubj').value=`${isWire?'Wire':'ACH'} Payment Receipt - ${dateStr}`;
   document.getElementById('parsed').style.display='';
 }
 
 /* ── format currency ── */
 function fmt(val){
   const n=parseFloat(String(val).replace(/[^0-9.]/g,''));
-  if(isNaN(n)) return val;
+  if(isNaN(n))return val;
   return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 
-/* ── PDF generation ── */
-function mkPDF(r,b){
+/* ── PDF generation — ACH (red) ── */
+function mkACHpdf(r,b){
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({unit:'pt',format:'letter'});
   const W=612,M=48,co=CONFIG.COMPANY_NAME||b.company_name||'';
-  doc.setFillColor(192,57,43); doc.rect(0,0,W,60,'F');
+  doc.setFillColor(192,57,43);doc.rect(0,0,W,60,'F');
   if(logoDataUrl){
-    try{ doc.addImage(logoDataUrl,'PNG',M,8,44,44); }catch(e){}
-    doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont('helvetica','bold');
+    try{doc.addImage(logoDataUrl,'PNG',M,8,44,44);}catch(e){}
+    doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont('helvetica','bold');
     doc.text(co,M+54,30);
-    doc.setFontSize(9); doc.setFont('helvetica','normal');
+    doc.setFontSize(9);doc.setFont('helvetica','normal');
     doc.text('ACH PAYMENT RECEIPT',W-M,30,{align:'right'});
-    doc.setFontSize(8); doc.text('GREAT TALENT, BETTER RESULTS',M+54,44);
-  } else {
-    doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont('helvetica','bold');
+    doc.setFontSize(8);doc.text('GREAT TALENT, BETTER RESULTS',M+54,44);
+  }else{
+    doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont('helvetica','bold');
     doc.text(co,M,35);
-    doc.setFontSize(9); doc.setFont('helvetica','normal');
+    doc.setFontSize(9);doc.setFont('helvetica','normal');
     doc.text('ACH PAYMENT RECEIPT',W-M,35,{align:'right'});
   }
-  doc.setFillColor(245,245,242); doc.rect(0,60,W,26,'F');
-  doc.setTextColor(80,80,80); doc.setFontSize(8.5);
+  doc.setFillColor(245,245,242);doc.rect(0,60,W,26,'F');
+  doc.setTextColor(80,80,80);doc.setFontSize(8.5);
   doc.text(`Batch: ${b.batch_id||''}`,M,77);
   doc.text(`Payment Date: ${b.payment_date||''}`,W/2,77,{align:'center'});
   doc.text(`Generated: ${new Date().toLocaleDateString('en-US')}`,W-M,77,{align:'right'});
   let y=104;
-  st(doc,'Payment Details',M,y,W-M*2); y+=22;
+  st(doc,'Payment Details',M,y,W-M*2,'ach');y+=22;
   [['Originating Account',b.originating_account||''],
    ['Company ID',b.company_id||''],
    ['ACH Type',b.ach_type||''],
    ['Description',b.payment_description||'']]
-  .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;if(i%2===0&&i>0)y+=38;fld(doc,l,v,col,y,W/2-M-16);}); y+=52;
-  doc.setDrawColor(192,57,43); doc.setLineWidth(0.5); doc.line(M,y,W-M,y); y+=16;
-  st(doc,'Recipient Details',M,y,W-M*2); y+=22;
+  .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;if(i%2===0&&i>0)y+=38;fld(doc,l,v,col,y,W/2-M-16);});y+=52;
+  doc.setDrawColor(192,57,43);doc.setLineWidth(0.5);doc.line(M,y,W-M,y);y+=16;
+  st(doc,'Recipient Details',M,y,W-M*2,'ach');y+=22;
   [['Recipient Name',r.name||''],
    ['Account Number','****'+String(r.account_number||'').slice(-4)],
    ['Bank Routing',r.bank_routing||''],
    ['Account Type',r.account_type||''],
    ['Reference / Addenda',r.addenda||'']]
-  .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;if(i%2===0&&i>0)y+=38;fld(doc,l,v,col,y,W/2-M-16);}); y+=52;
-  doc.setFillColor(253,242,240); doc.roundedRect(M,y,W-M*2,64,6,6,'F');
-  doc.setDrawColor(192,57,43); doc.setLineWidth(0.5); doc.roundedRect(M,y,W-M*2,64,6,6,'S');
-  doc.setTextColor(192,57,43); doc.setFontSize(10); doc.setFont('helvetica','normal');
-  doc.text('Amount Sent',W/2,y+20,{align:'center'});
-  doc.setFontSize(26); doc.setFont('helvetica','bold');
-  doc.text(`${fmt(r.amount)} ${b.currency||'USD'}`,W/2,y+50,{align:'center'}); y+=80;
-  doc.setFillColor(192,57,43); doc.roundedRect(W/2-46,y,92,22,4,4,'F');
-  doc.setTextColor(255,255,255); doc.setFontSize(8.5); doc.setFont('helvetica','bold');
-  doc.text('PROCESSED',W/2,y+14,{align:'center'});
-  doc.setDrawColor(210,210,210); doc.setLineWidth(0.3); doc.line(M,748,W-M,748);
-  doc.setTextColor(160,160,160); doc.setFontSize(7.5); doc.setFont('helvetica','normal');
-  doc.text('Fast Dolphin, Inc. · Automated payment receipt · Contact your payment administrator with questions.',W/2,760,{align:'center'});
+  .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;if(i%2===0&&i>0)y+=38;fld(doc,l,v,col,y,W/2-M-16);});y+=52;
+  amountBox(doc,r,b,M,y,W,'ach');y+=80;
+  statusBadge(doc,W,y,'ach');
+  footer(doc,M,W);
   return doc.output('arraybuffer');
 }
-function st(doc,t,x,y,w){doc.setFillColor(245,242,242);doc.rect(x,y-11,w,17,'F');doc.setTextColor(192,57,43);doc.setFontSize(8.5);doc.setFont('helvetica','bold');doc.text(t.toUpperCase(),x+6,y);}
-function fld(doc,l,v,x,y,mw){doc.setTextColor(130,130,130);doc.setFontSize(8);doc.setFont('helvetica','normal');doc.text(l,x,y);doc.setTextColor(30,30,30);doc.setFontSize(10.5);doc.setFont('helvetica','bold');doc.text(doc.splitTextToSize(String(v),mw),x,y+13);}
+
+/* ── PDF generation — Wire (blue) ── */
+function mkWirepdf(r,b){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'pt',format:'letter'});
+  const W=612,M=48,co=CONFIG.COMPANY_NAME||b.company_name||'';
+
+  // Blue header
+  doc.setFillColor(26,86,160);doc.rect(0,0,W,60,'F');
+  if(logoDataUrl){
+    try{doc.addImage(logoDataUrl,'PNG',M,8,44,44);}catch(e){}
+    doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont('helvetica','bold');
+    doc.text(co,M+54,30);
+    doc.setFontSize(9);doc.setFont('helvetica','normal');
+    doc.text('WIRE TRANSFER RECEIPT',W-M,30,{align:'right'});
+    doc.setFontSize(8);doc.text('GREAT TALENT, BETTER RESULTS',M+54,44);
+  }else{
+    doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont('helvetica','bold');
+    doc.text(co,M,35);
+    doc.setFontSize(9);doc.setFont('helvetica','normal');
+    doc.text('WIRE TRANSFER RECEIPT',W-M,35,{align:'right'});
+  }
+
+  // Sub-bar
+  doc.setFillColor(235,245,251);doc.rect(0,60,W,26,'F');
+  doc.setTextColor(20,63,114);doc.setFontSize(8.5);
+  doc.text(`Payment ID: ${r.payment_id||''}`,M,77);
+  doc.text(`Value Date: ${r.value_date||b.payment_date||''}`,W/2,77,{align:'center'});
+  doc.text(`Generated: ${new Date().toLocaleDateString('en-US')}`,W-M,77,{align:'right'});
+
+  let y=104;
+
+  // Confirmation details
+  st(doc,'Confirmation',M,y,W-M*2,'wire');y+=22;
+  [['SWIFT Confirmation',r.swift_confirmation||''],
+   ['TRN',r.trn_confirmation||''],
+   ['Payment ID',r.payment_id||''],
+   ['Value Date',r.value_date||b.payment_date||'']]
+  .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;if(i%2===0&&i>0)y+=38;fld(doc,l,v,col,y,W/2-M-16);});y+=52;
+
+  doc.setDrawColor(26,86,160);doc.setLineWidth(0.5);doc.line(M,y,W-M,y);y+=16;
+
+  // Beneficiary
+  st(doc,'Beneficiary Details',M,y,W-M*2,'wire');y+=22;
+  [['Beneficiary Name',r.name||''],
+   ['Account Number',r.account_number||''],
+   ['Address',r.address||''],
+   ['Country',r.country||'']]
+  .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;if(i%2===0&&i>0)y+=38;fld(doc,l,v,col,y,W/2-M-16);});y+=52;
+
+  doc.setDrawColor(26,86,160);doc.setLineWidth(0.5);doc.line(M,y,W-M,y);y+=16;
+
+  // Beneficiary Bank
+  st(doc,'Beneficiary Bank',M,y,W-M*2,'wire');y+=22;
+  [['Bank Name',r.bank_name||''],
+   ['BIC / SWIFT',r.bank_bic||''],
+   ['Bank Address',r.bank_address||''],
+   ['Purpose of Payment',r.purpose||'']]
+  .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;if(i%2===0&&i>0)y+=38;fld(doc,l,v,col,y,W/2-M-16);});y+=52;
+
+  amountBox(doc,r,b,M,y,W,'wire');y+=80;
+  statusBadge(doc,W,y,'wire');
+  footer(doc,M,W);
+  return doc.output('arraybuffer');
+}
+
+/* ── shared PDF helpers ── */
+function st(doc,t,x,y,w,type){
+  const bg=type==='wire'?[235,245,251]:[245,242,242];
+  const tc=type==='wire'?[20,63,114]:[192,57,43];
+  doc.setFillColor(...bg);doc.rect(x,y-11,w,17,'F');
+  doc.setTextColor(...tc);doc.setFontSize(8.5);doc.setFont('helvetica','bold');
+  doc.text(t.toUpperCase(),x+6,y);
+}
+function fld(doc,l,v,x,y,mw){
+  doc.setTextColor(130,130,130);doc.setFontSize(8);doc.setFont('helvetica','normal');
+  doc.text(l,x,y);
+  doc.setTextColor(30,30,30);doc.setFontSize(10.5);doc.setFont('helvetica','bold');
+  doc.text(doc.splitTextToSize(String(v),mw),x,y+13);
+}
+function amountBox(doc,r,b,M,y,W,type){
+  const isWire=type==='wire';
+  const fillRgb=isWire?[235,245,251]:[253,242,240];
+  const strokeRgb=isWire?[26,86,160]:[192,57,43];
+  const textRgb=isWire?[26,86,160]:[192,57,43];
+  doc.setFillColor(...fillRgb);doc.roundedRect(M,y,W-M*2,64,6,6,'F');
+  doc.setDrawColor(...strokeRgb);doc.setLineWidth(0.5);doc.roundedRect(M,y,W-M*2,64,6,6,'S');
+  doc.setTextColor(...textRgb);doc.setFontSize(10);doc.setFont('helvetica','normal');
+  doc.text('Amount Sent',W/2,y+20,{align:'center'});
+  doc.setFontSize(26);doc.setFont('helvetica','bold');
+  doc.text(`${fmt(r.amount)} ${b.currency||'USD'}`,W/2,y+50,{align:'center'});
+}
+function statusBadge(doc,W,y,type){
+  const isWire=type==='wire';
+  const rgb=isWire?[26,86,160]:[192,57,43];
+  doc.setFillColor(...rgb);doc.roundedRect(W/2-46,y,92,22,4,4,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(8.5);doc.setFont('helvetica','bold');
+  doc.text(isWire?'SUCCESSFUL':'PROCESSED',W/2,y+14,{align:'center'});
+}
+function footer(doc,M,W){
+  doc.setDrawColor(210,210,210);doc.setLineWidth(0.3);doc.line(M,748,W-M,748);
+  doc.setTextColor(160,160,160);doc.setFontSize(7.5);doc.setFont('helvetica','normal');
+  doc.text('Fast Dolphin, Inc. · Automated payment receipt · Contact your payment administrator with questions.',W/2,760,{align:'center'});
+}
 
 /* ── Gmail send ── */
 async function gmailSend(to,subject,bodyText,pdfBuf,filename){
-  if(!accessToken) throw new Error('Not signed in — click Sign in with Google');
-  const boundary='achrec_'+Date.now();
+  if(!accessToken)throw new Error('Not signed in — click Sign in with Google');
+  const boundary='fdreceipt_'+Date.now();
   const bytes=new Uint8Array(pdfBuf);
-  let bin=''; for(let i=0;i<bytes.length;i++) bin+=String.fromCharCode(bytes[i]);
+  let bin='';for(let i=0;i<bytes.length;i++)bin+=String.fromCharCode(bytes[i]);
   const b64=btoa(bin);
-
-  // FIX 2: encode subject as RFC2047 to safely handle any characters
   const encodedSubject='=?UTF-8?B?'+btoa(unescape(encodeURIComponent(subject)))+'?=';
-
   const mime=[
-    `From: me`,
-    `To: ${to}`,
-    `Subject: ${encodedSubject}`,
-    `MIME-Version: 1.0`,
+    `From: me`,`To: ${to}`,`Subject: ${encodedSubject}`,`MIME-Version: 1.0`,
     `Content-Type: multipart/mixed; boundary="${boundary}"`,``,
-    `--${boundary}`,
-    `Content-Type: text/plain; charset="UTF-8"`,
-    `Content-Transfer-Encoding: quoted-printable`,``,
-    bodyText,``,
-    `--${boundary}`,
-    `Content-Type: application/pdf; name="${filename}"`,
-    `Content-Transfer-Encoding: base64`,
-    `Content-Disposition: attachment; filename="${filename}"`,``,
-    b64,``,
-    `--${boundary}--`
+    `--${boundary}`,`Content-Type: text/plain; charset="UTF-8"`,``,bodyText,``,
+    `--${boundary}`,`Content-Type: application/pdf; name="${filename}"`,
+    `Content-Transfer-Encoding: base64`,`Content-Disposition: attachment; filename="${filename}"`,``,
+    b64,``,`--${boundary}--`
   ].join('\r\n');
-
   const encoded=btoa(mime.split('').map(c=>String.fromCharCode(c.charCodeAt(0)&0xff)).join('')).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-
   const res=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{
     method:'POST',headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},
     body:JSON.stringify({raw:encoded})
@@ -468,10 +606,11 @@ async function gmailSend(to,subject,bodyText,pdfBuf,filename){
 
 /* ── send all ── */
 async function sendAll(){
-  if(!batch) return;
-  const btn=document.getElementById('sbtn'); btn.disabled=true;
-  const tpl=document.getElementById('esubj').value||'ACH Payment Receipt';
+  if(!batch)return;
+  const btn=document.getElementById('sbtn');btn.disabled=true;
+  const tpl=document.getElementById('esubj').value||'Payment Receipt';
   const customBody=document.getElementById('ebody').value.trim();
+  const isWire=docType==='wire';
   const recs=batch.recipients.map(r=>({...r,contact:findC(r.name)}));
   const wrap=document.getElementById('sstatus');
   wrap.innerHTML='<div>'+recs.map((r,i)=>`
@@ -482,21 +621,27 @@ async function sendAll(){
     </div>`).join('')+'</div>';
   let sent=0,failed=0;
   for(let i=0;i<recs.length;i++){
-    const r=recs[i]; dot(i,'spin');
+    const r=recs[i];dot(i,'spin');
     if(!r.contact?.email){dot(i,'err');msg(i,'Skipped — no email');failed++;continue;}
     try{
-      const pdfBuf=mkPDF(r,batch);
-      const subj=tpl.replace('{name}',r.name).replace('{amount}',fmt(r.amount)).replace('{date}',batch.payment_date||'').replace('{payment_id}',batch.batch_id||'');
-      const fname=`ACH_Receipt_${r.name.replace(/\s+/g,'_')}_${(batch.payment_date||'').replace(/\//g,'-')}.pdf`;
-      const body=customBody||`Dear ${r.name},\n\nPlease find attached your ACH payment receipt for ${fmt(r.amount)} ${batch.currency||'USD'} processed on ${batch.payment_date||''}.\n\nPayment Reference: ${batch.batch_id||''}\nAddenda: ${r.addenda||''}\n\nFor questions, please contact us.\n\nFast Dolphin, Inc.`;
+      const pdfBuf=isWire?mkWirepdf(r,batch):mkACHpdf(r,batch);
+      const dateStr=isWire?(r.value_date||batch.payment_date||''):(batch.payment_date||'');
+      const pidStr=isWire?(r.payment_id||''):(batch.batch_id||'');
+      const subj=tpl.replace('{name}',r.name).replace('{amount}',fmt(r.amount)).replace('{date}',dateStr).replace('{payment_id}',pidStr);
+      const prefix=isWire?'Wire':'ACH';
+      const fname=`${prefix}_Receipt_${r.name.replace(/\s+/g,'_')}_${dateStr.replace(/\//g,'-')}.pdf`;
+      const body=customBody||(isWire?
+        `Dear ${r.name},\n\nPlease find attached your wire transfer receipt for ${fmt(r.amount)} ${batch.currency||'USD'}.\n\nPayment ID: ${r.payment_id||''}\nSWIFT: ${r.swift_confirmation||''}\nTRN: ${r.trn_confirmation||''}\nValue Date: ${r.value_date||''}\nPurpose: ${r.purpose||''}\n\nFor questions, please contact us.\n\nFast Dolphin, Inc.`
+        :`Dear ${r.name},\n\nPlease find attached your ACH payment receipt for ${fmt(r.amount)} ${batch.currency||'USD'} processed on ${batch.payment_date||''}.\n\nPayment Reference: ${batch.batch_id||''}\nAddenda: ${r.addenda||''}\n\nFor questions, please contact us.\n\nFast Dolphin, Inc.`
+      );
       await gmailSend(r.contact.email,subj,body,pdfBuf,fname);
-      dot(i,'ok'); msg(i,'Sent ✓'); sent++;
+      dot(i,'ok');msg(i,'Sent ✓');sent++;
     }catch(e){dot(i,'err');msg(i,e.message);failed++;}
   }
   const s=document.createElement('div');
   s.className='sb '+(failed===0?'so':sent>0?'sw':'se');
   s.innerHTML=failed===0?`All ${sent} receipts sent`:`${sent} sent · ${failed} failed or skipped`;
-  wrap.appendChild(s); btn.disabled=false;
+  wrap.appendChild(s);btn.disabled=false;
 }
 
 /* ── helpers ── */
