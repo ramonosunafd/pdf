@@ -254,7 +254,7 @@ function initAuth() {
 }
 function handleAuth() {
   if(!CONFIG.GOOGLE_CLIENT_ID||CONFIG.GOOGLE_CLIENT_ID.includes('PASTE')){alert('Add your Google Client ID first.');return;}
-  const p=new URLSearchParams({client_id:CONFIG.GOOGLE_CLIENT_ID,redirect_uri:'http://localhost:8000',response_type:'token',scope:'https://www.googleapis.com/auth/gmail.send',prompt:'consent'});
+  const p=new URLSearchParams({client_id:CONFIG.GOOGLE_CLIENT_ID,redirect_uri:'https://ramonosunafd.github.io/pdf/',response_type:'token',scope:'https://www.googleapis.com/auth/gmail.send',prompt:'consent'});
   window.location.href='https://accounts.google.com/o/oauth2/v2/auth?'+p.toString();
 }
 function setAuthBar(ok,msg){const b=document.getElementById('auth-bar');b.style.background=ok?'#EAF3DE':'#FAEEDA';b.style.color=ok?'#27500A':'#854F0B';b.textContent=(ok?'✓ ':'⚠ ')+msg;}
