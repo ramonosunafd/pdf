@@ -330,8 +330,8 @@ async function parse(text){
 
   if(docType==='corpay'){
     maxTokens=6000;
-    prompt=`Extract all payment data from this Corpay (Cambridge Mercantile) Spot Deal Confirmation document.
-Return ONLY valid JSON — no markdown, no explanation.
+    prompt=`Extract all payment data from this Corpay Spot Deal Confirmation.
+Return ONLY valid JSON — no markdown, no explanation. Be concise — short strings only, no long addresses.
 
 {
   "deal_number": "",
@@ -343,7 +343,7 @@ Return ONLY valid JSON — no markdown, no explanation.
     {
       "seq": 1,
       "name": "",
-      "address": "",
+      "city": "",
       "country": "",
       "beneficiary_bank": "",
       "beneficiary_account": "",
@@ -351,14 +351,19 @@ Return ONLY valid JSON — no markdown, no explanation.
       "usd_cost": "",
       "local_amount": "",
       "local_currency": "",
-      "payment_reference": "",
-      "method": "WIRE"
+      "payment_reference": ""
     }
   ]
 }
 
-Important: Extract ALL recipients from ALL pages (up to 20). Each recipient is a separate payment row in the Payment Details table.
-For local_currency use MXN, USD, or whatever currency the payment amount is in.
+Rules:
+- Extract ALL recipients from ALL pages (up to 20).
+- Each row in the Payment Details table is one recipient.
+- For name: use the clean beneficiary name only (not the "WIRE - Name" prefix).
+- For city: just the city name, not full address.
+- For beneficiary_bank: bank name only, no address.
+- For local_currency: MXN, USD, or whatever applies.
+- Keep all string values SHORT — under 60 characters each.
 
 REPORT TEXT:
 ${text.slice(0,12000)}`;
@@ -636,7 +641,7 @@ function mkCorpaypdf(r,b){
   doc.setDrawColor(...COLORS.corpay.h);doc.setLineWidth(0.5);doc.line(M,y,W-M,y);y+=16;
   pdfSection(doc,'Recipient Details',M,y,W-M*2,'corpay');y+=22;
   [['Recipient Name',r.name||''],['Beneficiary Account',r.beneficiary_account||''],
-   ['Address',r.address||''],['Country',r.country||'']]
+   ['City',r.city||''],['Country',r.country||'']]
   .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;if(i%2===0&&i>0)y+=38;pdfField(doc,l,v,col,y,W/2-M-16);});y+=52;
   doc.setDrawColor(...COLORS.corpay.h);doc.setLineWidth(0.5);doc.line(M,y,W-M,y);y+=16;
   pdfSection(doc,'Beneficiary Bank',M,y,W-M*2,'corpay');y+=22;
