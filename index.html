@@ -634,11 +634,7 @@ function mkCorpaypdf(r,b){
   pdfHeader(doc,co,W,M,'corpay','CORPAY PAYMENT RECEIPT');
   pdfSubbar(doc,`Deal: ${b.deal_number||''}`,`Date: ${b.deal_date||''}`,`Generated: ${new Date().toLocaleDateString('en-US')}`,W,M,'corpay');
   let y=104;
-  pdfSection(doc,'Deal Details',M,y,W-M*2,'corpay');y+=22;
-  [['Deal Number',b.deal_number||''],['Date Booked',b.deal_date||''],
-   ['FX Rate',b.fx_rate||''],['Total USD Cost',`${fmt(b.total_usd_cost)} USD`]]
-  .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;if(i%2===0&&i>0)y+=38;pdfField(doc,l,v,col,y,W/2-M-16);});y+=52;
-  doc.setDrawColor(...COLORS.corpay.h);doc.setLineWidth(0.5);doc.line(M,y,W-M,y);y+=16;
+
   pdfSection(doc,'Recipient Details',M,y,W-M*2,'corpay');y+=22;
   [['Recipient Name',r.name||''],['Beneficiary Account',r.beneficiary_account||''],
    ['City',r.city||''],['Country',r.country||'']]
@@ -649,7 +645,7 @@ function mkCorpaypdf(r,b){
    ['Payment Reference',r.payment_reference||''],['Method',r.method||'WIRE']]
   .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;if(i%2===0&&i>0)y+=38;pdfField(doc,l,v,col,y,W/2-M-16);});y+=52;
   // Dual amount box
-  pdfAmountBox(doc,'Amount Sent',`${fmt(r.usd_cost)} USD`,`${fmt(r.local_amount)} ${r.local_currency||'MXN'} received`,M,y,W,'corpay');y+=94;
+  pdfAmountBox(doc,'Amount Sent',`${fmt(r.usd_cost)} USD`,`${fmt(r.local_amount)} ${r.local_currency||'MXN'} received  ·  FX Rate: ${b.fx_rate||''}`,M,y,W,'corpay');y+=94;
   pdfStatusBadge(doc,'CONFIRMED',W,y,'corpay');
   pdfFooter(doc,M,W);
   return doc.output('arraybuffer');
