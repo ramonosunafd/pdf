@@ -329,7 +329,7 @@ async function parse(text){
   let maxTokens=2000;
 
   if(docType==='corpay'){
-    maxTokens=3000;
+    maxTokens=6000;
     prompt=`Extract all payment data from this Corpay (Cambridge Mercantile) Spot Deal Confirmation document.
 Return ONLY valid JSON — no markdown, no explanation.
 
@@ -363,7 +363,7 @@ For local_currency use MXN, USD, or whatever currency the payment amount is in.
 REPORT TEXT:
 ${text.slice(0,12000)}`;
   } else if(docType==='wire'){
-    maxTokens=3000;
+    maxTokens=4000;
     prompt=`Extract all wire payment data from this Wells Fargo Wire Payment Detail report.
 Return ONLY valid JSON — no markdown, no explanation.
 
