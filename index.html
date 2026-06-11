@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ACH + Wire Receipt Sender — Fast Dolphin</title>
+<title>Payment Receipt Sender — Fast Dolphin</title>
 <script>
 const CONFIG = {
   GOOGLE_CLIENT_ID:  '612772420367-eekqm7motrsmoue4lvesrv4sq2rvt7ll.apps.googleusercontent.com',
@@ -23,22 +23,21 @@ h2{font-size:15px;font-weight:500;margin-bottom:14px}
 p.sub{font-size:13px;color:#666;margin-top:4px}
 label{font-size:13px;font-weight:500;color:#555;display:block;margin-bottom:5px}
 input[type=text],input[type=email],textarea{width:100%;padding:9px 12px;border:1px solid rgba(0,0,0,0.22);border-radius:8px;font-size:14px;font-family:inherit;background:#fff;color:#1a1a18}
-input:focus,textarea:focus{outline:2px solid #C0392B;outline-offset:1px}
+input:focus,textarea:focus{outline:2px solid #1A6B3C;outline-offset:1px}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border:none;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;transition:opacity .15s}
 .btn:hover{opacity:.85}.btn:disabled{opacity:.4;cursor:default}
 .btn-red{background:#C0392B;color:#fff}
 .btn-blue{background:#1A56A0;color:#fff}
+.btn-green{background:#1A6B3C;color:#fff}
 .btn-gray{background:#ebebea;color:#1a1a18}
 .btn-sm{padding:6px 12px;font-size:13px}
 .drop-zone{border:2px dashed rgba(0,0,0,0.18);border-radius:10px;padding:36px 20px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;position:relative}
-.drop-zone:hover,.dz-over{border-color:#1A56A0;background:rgba(26,86,160,.04)}
+.drop-zone:hover,.dz-over{border-color:#1A6B3C;background:rgba(26,107,60,.04)}
 .drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
 .row{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-bottom:10px}
 .badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500;white-space:nowrap}
 .b-ok{background:#EAF3DE;color:#27500A}
 .b-err{background:#FCEBEB;color:#A32D2D}
-.b-ach{background:#FDECEA;color:#922B21}
-.b-wire{background:#EBF5FB;color:#154360}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:left;padding:8px 10px;background:#f5f5f0;font-weight:500;border-bottom:1px solid rgba(0,0,0,0.1)}
 td{padding:8px 10px;border-bottom:1px solid rgba(0,0,0,0.07);vertical-align:top}
@@ -63,12 +62,12 @@ tr:last-child td{border-bottom:none}
 .alert{background:#FAEEDA;border-left:3px solid #EF9F27;padding:10px 14px;border-radius:0 6px 6px 0;font-size:13px;color:#854F0B;margin-top:10px}
 .spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(24,95,165,.3);border-top-color:#185FA5;border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle;margin-right:5px}
 @keyframes sp{to{transform:rotate(360deg)}}
-#auth-bar{display:flex;align-items:center;gap:12px;padding:10px 16px;border-radius:8px;font-size:13px}
+#auth-bar{padding:10px 16px;border-radius:8px;font-size:13px}
 .contact-count{font-size:13px;color:#666;margin-bottom:12px}
-.csv-help{font-size:12px;color:#999;line-height:1.5}
 .type-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;margin-bottom:12px}
 .type-ach{background:#FDECEA;color:#922B21}
 .type-wire{background:#EBF5FB;color:#154360}
+.type-corpay{background:#E9F7EF;color:#1A6B3C}
 </style>
 </head>
 <body>
@@ -81,7 +80,7 @@ tr:last-child td{border-bottom:none}
         <img id="header-logo" src="" alt="Fast Dolphin" style="height:48px;display:none">
         <div>
           <h1>Payment Receipt Sender</h1>
-          <p class="sub">Fast Dolphin, Inc. · ACH &amp; Wire payments · Send individual receipts via Gmail</p>
+          <p class="sub">Fast Dolphin, Inc. · ACH · Wire · Corpay — Send individual receipts via Gmail</p>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
@@ -106,13 +105,17 @@ tr:last-child td{border-bottom:none}
 
     <!-- SEND TAB -->
     <div id="t-send">
-      <h2>1 &nbsp;Upload Wells Fargo PDF</h2>
-      <p style="font-size:13px;color:#666;margin-bottom:12px">Supports both ACH Payment Detail and Wire Payment Detail reports — auto-detected.</p>
+      <h2>1 &nbsp;Upload Payment PDF</h2>
+      <p style="font-size:13px;color:#666;margin-bottom:12px">
+        Supports <span style="color:#C0392B;font-weight:600">ACH</span>,
+        <span style="color:#1A56A0;font-weight:600">Wire</span>, and
+        <span style="color:#1A6B3C;font-weight:600">Corpay</span> reports — auto-detected.
+      </p>
       <div class="drop-zone" id="dz" ondragover="dv(event,1)" ondragleave="dv(event,0)" ondrop="dd(event)">
         <input type="file" accept=".pdf" onchange="fp(event)">
         <div style="font-size:28px;margin-bottom:8px">📄</div>
         <div style="font-size:14px;color:#555">Drop PDF here or click to browse</div>
-        <div style="font-size:12px;color:#999;margin-top:4px">Wells Fargo ACH or Wire Payment Detail report</div>
+        <div style="font-size:12px;color:#999;margin-top:4px">Wells Fargo ACH, Wells Fargo Wire, or Corpay Spot Deal Confirmation</div>
       </div>
       <div id="ps"></div>
       <div class="div"></div>
@@ -120,8 +123,10 @@ tr:last-child td{border-bottom:none}
         <h2>2 &nbsp;Parsed recipients</h2>
         <div id="type-indicator"></div>
         <div id="hinfo" class="hg"></div>
-        <table><thead><tr><th>#</th><th>Name</th><th>Amount</th><th id="col3-hdr">Addenda</th><th>Email</th></tr></thead>
-        <tbody id="ptbody"></tbody></table>
+        <table>
+          <thead><tr><th>#</th><th>Name</th><th id="col-amount-hdr">Amount</th><th id="col3-hdr">Reference</th><th>Email</th></tr></thead>
+          <tbody id="ptbody"></tbody>
+        </table>
         <div id="mwarn"></div>
         <div class="div"></div>
         <h2>3 &nbsp;Email options</h2>
@@ -154,7 +159,7 @@ tr:last-child td{border-bottom:none}
           <button class="btn btn-gray btn-sm" onclick="addC()">+ Add row</button>
         </div>
       </div>
-      <div class="csv-help" style="margin-bottom:12px;padding:10px 12px;background:#f5f5f0;border-radius:8px">
+      <div style="font-size:12px;color:#999;margin-bottom:12px;padding:10px 12px;background:#f5f5f0;border-radius:8px;line-height:1.5">
         <strong>CSV format:</strong> Two columns — <code>name,email</code> — one recipient per row.<br>
         Example: <code>Hire IT People Inc,billing@hireitpeople.com</code>
       </div>
@@ -226,7 +231,7 @@ function exportCSV(){
   const csv='name,email\n'+rows.join('\n');
   const blob=new Blob([csv],{type:'text/csv'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download='ach_recipients.csv';a.click();
+  a.download='fd_recipients.csv';a.click();
 }
 function updateCount(){
   document.getElementById('ccount').textContent=`${contacts.length} recipient${contacts.length!==1?'s':''} saved`;
@@ -302,8 +307,17 @@ async function go(file){
       if(row.length)lines.push(row.join(' '));
     }
     const txt=lines.filter(l=>l.trim()).join('\n');
+
     // Auto-detect document type
-    docType=txt.toLowerCase().includes('wire')||txt.toLowerCase().includes('payment id')&&txt.toLowerCase().includes('beneficiary')?'wire':'ach';
+    const tl=txt.toLowerCase();
+    if(tl.includes('corpay')||tl.includes('cambridge mercantile')||tl.includes('spot deal')){
+      docType='corpay';
+    } else if(tl.includes('wire')&&(tl.includes('beneficiary')||tl.includes('payment id'))){
+      docType='wire';
+    } else {
+      docType='ach';
+    }
+
     ss('ps','i',`<span class="spin"></span>Parsing ${docType.toUpperCase()} document with AI...`);
     await parse(txt);
   }catch(e){ss('ps','e','Extraction failed: '+e.message);}
@@ -311,9 +325,46 @@ async function go(file){
 
 /* ── Claude parse ── */
 async function parse(text){
-  const isWire=docType==='wire';
-  const prompt=isWire?
-`Extract all wire payment data from this Wells Fargo Wire Payment Detail report.
+  let prompt='';
+  let maxTokens=2000;
+
+  if(docType==='corpay'){
+    maxTokens=3000;
+    prompt=`Extract all payment data from this Corpay (Cambridge Mercantile) Spot Deal Confirmation document.
+Return ONLY valid JSON — no markdown, no explanation.
+
+{
+  "deal_number": "",
+  "deal_date": "",
+  "company_name": "Fast Dolphin, Inc.",
+  "fx_rate": "",
+  "total_usd_cost": "",
+  "recipients": [
+    {
+      "seq": 1,
+      "name": "",
+      "address": "",
+      "country": "",
+      "beneficiary_bank": "",
+      "beneficiary_account": "",
+      "bic": "",
+      "usd_cost": "",
+      "local_amount": "",
+      "local_currency": "",
+      "payment_reference": "",
+      "method": "WIRE"
+    }
+  ]
+}
+
+Important: Extract ALL recipients from ALL pages (up to 20). Each recipient is a separate payment row in the Payment Details table.
+For local_currency use MXN, USD, or whatever currency the payment amount is in.
+
+REPORT TEXT:
+${text.slice(0,12000)}`;
+  } else if(docType==='wire'){
+    maxTokens=3000;
+    prompt=`Extract all wire payment data from this Wells Fargo Wire Payment Detail report.
 Return ONLY valid JSON — no markdown, no explanation.
 
 {
@@ -342,10 +393,12 @@ Return ONLY valid JSON — no markdown, no explanation.
   ]
 }
 
+Important: Extract ALL recipients from ALL pages (up to 20).
+
 REPORT TEXT:
-${text.slice(0,6000)}`
-:
-`Extract all payment data from this Wells Fargo ACH Payment Detail report.
+${text.slice(0,12000)}`;
+  } else {
+    prompt=`Extract all payment data from this Wells Fargo ACH Payment Detail report.
 Return ONLY valid JSON — no markdown, no explanation.
 
 {
@@ -355,13 +408,14 @@ Return ONLY valid JSON — no markdown, no explanation.
 }
 
 REPORT TEXT:
-${text.slice(0,3000)}`;
+${text.slice(0,4000)}`;
+  }
 
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':CONFIG.ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:maxTokens,messages:[{role:'user',content:prompt}]})
     });
     const data=await res.json();
     if(data.error)throw new Error(data.error.message);
@@ -375,19 +429,26 @@ ${text.slice(0,3000)}`;
 /* ── render parsed ── */
 function renderBatch(){
   const b=batch;
-  const isWire=docType==='wire';
-  const accentColor=isWire?'#1A56A0':'#C0392B';
 
-  // Type indicator pill
-  document.getElementById('type-indicator').innerHTML=
-    `<div class="type-pill ${isWire?'type-wire':'type-ach'}">${isWire?'🔵 Wire Transfer':'🔴 ACH Payment'}</div>`;
+  // Type indicator
+  const pills={ach:'🔴 ACH Payment',wire:'🔵 Wire Transfer',corpay:'🟢 Corpay'};
+  const pillCls={ach:'type-ach',wire:'type-wire',corpay:'type-corpay'};
+  document.getElementById('type-indicator').innerHTML=`<div class="type-pill ${pillCls[docType]}">${pills[docType]}</div>`;
 
-  // Update send button color
-  const sbtn=document.getElementById('sbtn');
-  sbtn.className=`btn ${isWire?'btn-blue':'btn-red'}`;
+  // Send button color
+  const btnCls={ach:'btn-red',wire:'btn-blue',corpay:'btn-green'};
+  document.getElementById('sbtn').className=`btn ${btnCls[docType]}`;
 
   // Header info
-  if(isWire){
+  if(docType==='corpay'){
+    document.getElementById('hinfo').innerHTML=`
+      <div><div class="hl">Deal Number</div><div class="hv">${x(b.deal_number)}</div></div>
+      <div><div class="hl">Date</div><div class="hv">${x(b.deal_date)}</div></div>
+      <div><div class="hl">Company</div><div class="hv">${x(b.company_name||CONFIG.COMPANY_NAME)}</div></div>
+      <div><div class="hl">FX Rate</div><div class="hv">${x(b.fx_rate)}</div></div>
+      <div><div class="hl">Total USD Cost</div><div class="hv">${fmt(b.total_usd_cost)} USD</div></div>
+      <div><div class="hl">Recipients</div><div class="hv">${b.recipients.length}</div></div>`;
+  } else if(docType==='wire'){
     document.getElementById('hinfo').innerHTML=`
       <div><div class="hl">Payment date</div><div class="hv">${x(b.payment_date)}</div></div>
       <div><div class="hl">Company</div><div class="hv">${x(b.company_name||CONFIG.COMPANY_NAME)}</div></div>
@@ -402,181 +463,191 @@ function renderBatch(){
       <div><div class="hl">Originating account</div><div class="hv">${x(b.originating_account)}</div></div>`;
   }
 
-  // Table header col 3
-  document.getElementById('col3-hdr').textContent=isWire?'Purpose':'Addenda';
+  // Table headers
+  document.getElementById('col3-hdr').textContent=docType==='ach'?'Addenda':'Reference';
+  document.getElementById('col-amount-hdr').textContent=docType==='corpay'?'USD Cost / Local Amount':'Amount';
 
+  // Rows
   const tb=document.getElementById('ptbody');tb.innerHTML='';
   const unmatched=[];
   (b.recipients||[]).forEach(r=>{
     const c=findC(r.name);if(!c)unmatched.push(r.name);
-    const col3=isWire?x(r.purpose||''):x(r.addenda||'');
+    let amountCell='';
+    if(docType==='corpay'){
+      amountCell=`<strong>${fmt(r.usd_cost)} USD</strong><br><span style="font-size:11px;color:#666">${fmt(r.local_amount)} ${x(r.local_currency)}</span>`;
+    } else {
+      amountCell=`<strong>${fmt(r.amount)} ${x(b.currency||'USD')}</strong>`;
+    }
+    const col3=docType==='ach'?x(r.addenda||''):x(r.payment_reference||r.purpose||r.addenda||'');
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td>${r.seq}</td><td>${x(r.name)}</td><td><strong>${fmt(r.amount)} ${x(b.currency)}</strong></td><td>${col3}</td>
+    tr.innerHTML=`<td>${r.seq}</td><td>${x(r.name)}</td><td>${amountCell}</td><td>${col3}</td>
       <td>${c?`<span class="badge b-ok">✓ ${x(c.email)}</span>`:`<span class="badge b-err">No email</span>`}</td>`;
     tb.appendChild(tr);
   });
+
   document.getElementById('mwarn').innerHTML=unmatched.length
     ?`<div class="alert">⚠ No email for: <strong>${unmatched.join(', ')}</strong>. Add them in Recipient List tab.</div>`:'';
 
-  const dateStr=isWire?(b.payment_date||b.recipients[0]?.value_date||'{date}'):b.payment_date||'{date}';
-  document.getElementById('esubj').value=`${isWire?'Wire':'ACH'} Payment Receipt - ${dateStr}`;
+  // Subject default
+  const dateStr=docType==='corpay'?b.deal_date:docType==='wire'?(b.payment_date||b.recipients[0]?.value_date||''):b.payment_date||'';
+  const typeLabel={ach:'ACH',wire:'Wire',corpay:'Corpay'}[docType];
+  document.getElementById('esubj').value=`${typeLabel} Payment Receipt - ${dateStr}`;
   document.getElementById('parsed').style.display='';
 }
 
 /* ── format currency ── */
 function fmt(val){
-  const n=parseFloat(String(val).replace(/[^0-9.]/g,''));
-  if(isNaN(n))return val;
+  const n=parseFloat(String(val||'').replace(/[^0-9.]/g,''));
+  if(isNaN(n))return String(val||'');
   return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 
-/* ── PDF generation — ACH (red) ── */
-function mkACHpdf(r,b){
-  const {jsPDF}=window.jspdf;
-  const doc=new jsPDF({unit:'pt',format:'letter'});
-  const W=612,M=48,co=CONFIG.COMPANY_NAME||b.company_name||'';
-  doc.setFillColor(192,57,43);doc.rect(0,0,W,60,'F');
-  if(logoDataUrl){
-    try{doc.addImage(logoDataUrl,'PNG',M,8,44,44);}catch(e){}
-    doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont('helvetica','bold');
-    doc.text(co,M+54,30);
-    doc.setFontSize(9);doc.setFont('helvetica','normal');
-    doc.text('ACH PAYMENT RECEIPT',W-M,30,{align:'right'});
-    doc.setFontSize(8);doc.text('GREAT TALENT, BETTER RESULTS',M+54,44);
-  }else{
-    doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont('helvetica','bold');
-    doc.text(co,M,35);
-    doc.setFontSize(9);doc.setFont('helvetica','normal');
-    doc.text('ACH PAYMENT RECEIPT',W-M,35,{align:'right'});
-  }
-  doc.setFillColor(245,245,242);doc.rect(0,60,W,26,'F');
-  doc.setTextColor(80,80,80);doc.setFontSize(8.5);
-  doc.text(`Batch: ${b.batch_id||''}`,M,77);
-  doc.text(`Payment Date: ${b.payment_date||''}`,W/2,77,{align:'center'});
-  doc.text(`Generated: ${new Date().toLocaleDateString('en-US')}`,W-M,77,{align:'right'});
-  let y=104;
-  st(doc,'Payment Details',M,y,W-M*2,'ach');y+=22;
-  [['Originating Account',b.originating_account||''],
-   ['Company ID',b.company_id||''],
-   ['ACH Type',b.ach_type||''],
-   ['Description',b.payment_description||'']]
-  .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;if(i%2===0&&i>0)y+=38;fld(doc,l,v,col,y,W/2-M-16);});y+=52;
-  doc.setDrawColor(192,57,43);doc.setLineWidth(0.5);doc.line(M,y,W-M,y);y+=16;
-  st(doc,'Recipient Details',M,y,W-M*2,'ach');y+=22;
-  [['Recipient Name',r.name||''],
-   ['Account Number','****'+String(r.account_number||'').slice(-4)],
-   ['Bank Routing',r.bank_routing||''],
-   ['Account Type',r.account_type||''],
-   ['Reference / Addenda',r.addenda||'']]
-  .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;if(i%2===0&&i>0)y+=38;fld(doc,l,v,col,y,W/2-M-16);});y+=52;
-  amountBox(doc,r,b,M,y,W,'ach');y+=80;
-  statusBadge(doc,W,y,'ach');
-  footer(doc,M,W);
-  return doc.output('arraybuffer');
-}
-
-/* ── PDF generation — Wire (blue) ── */
-function mkWirepdf(r,b){
-  const {jsPDF}=window.jspdf;
-  const doc=new jsPDF({unit:'pt',format:'letter'});
-  const W=612,M=48,co=CONFIG.COMPANY_NAME||b.company_name||'';
-
-  // Blue header
-  doc.setFillColor(26,86,160);doc.rect(0,0,W,60,'F');
-  if(logoDataUrl){
-    try{doc.addImage(logoDataUrl,'PNG',M,8,44,44);}catch(e){}
-    doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont('helvetica','bold');
-    doc.text(co,M+54,30);
-    doc.setFontSize(9);doc.setFont('helvetica','normal');
-    doc.text('WIRE TRANSFER RECEIPT',W-M,30,{align:'right'});
-    doc.setFontSize(8);doc.text('GREAT TALENT, BETTER RESULTS',M+54,44);
-  }else{
-    doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont('helvetica','bold');
-    doc.text(co,M,35);
-    doc.setFontSize(9);doc.setFont('helvetica','normal');
-    doc.text('WIRE TRANSFER RECEIPT',W-M,35,{align:'right'});
-  }
-
-  // Sub-bar
-  doc.setFillColor(235,245,251);doc.rect(0,60,W,26,'F');
-  doc.setTextColor(20,63,114);doc.setFontSize(8.5);
-  doc.text(`Payment ID: ${r.payment_id||''}`,M,77);
-  doc.text(`Value Date: ${r.value_date||b.payment_date||''}`,W/2,77,{align:'center'});
-  doc.text(`Generated: ${new Date().toLocaleDateString('en-US')}`,W-M,77,{align:'right'});
-
-  let y=104;
-
-  // Confirmation details
-  st(doc,'Confirmation',M,y,W-M*2,'wire');y+=22;
-  [['SWIFT Confirmation',r.swift_confirmation||''],
-   ['TRN',r.trn_confirmation||''],
-   ['Payment ID',r.payment_id||''],
-   ['Value Date',r.value_date||b.payment_date||'']]
-  .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;if(i%2===0&&i>0)y+=38;fld(doc,l,v,col,y,W/2-M-16);});y+=52;
-
-  doc.setDrawColor(26,86,160);doc.setLineWidth(0.5);doc.line(M,y,W-M,y);y+=16;
-
-  // Beneficiary
-  st(doc,'Beneficiary Details',M,y,W-M*2,'wire');y+=22;
-  [['Beneficiary Name',r.name||''],
-   ['Account Number',r.account_number||''],
-   ['Address',r.address||''],
-   ['Country',r.country||'']]
-  .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;if(i%2===0&&i>0)y+=38;fld(doc,l,v,col,y,W/2-M-16);});y+=52;
-
-  doc.setDrawColor(26,86,160);doc.setLineWidth(0.5);doc.line(M,y,W-M,y);y+=16;
-
-  // Beneficiary Bank
-  st(doc,'Beneficiary Bank',M,y,W-M*2,'wire');y+=22;
-  [['Bank Name',r.bank_name||''],
-   ['BIC / SWIFT',r.bank_bic||''],
-   ['Bank Address',r.bank_address||''],
-   ['Purpose of Payment',r.purpose||'']]
-  .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;if(i%2===0&&i>0)y+=38;fld(doc,l,v,col,y,W/2-M-16);});y+=52;
-
-  amountBox(doc,r,b,M,y,W,'wire');y+=80;
-  statusBadge(doc,W,y,'wire');
-  footer(doc,M,W);
-  return doc.output('arraybuffer');
-}
-
 /* ── shared PDF helpers ── */
-function st(doc,t,x,y,w,type){
-  const bg=type==='wire'?[235,245,251]:[245,242,242];
-  const tc=type==='wire'?[20,63,114]:[192,57,43];
-  doc.setFillColor(...bg);doc.rect(x,y-11,w,17,'F');
-  doc.setTextColor(...tc);doc.setFontSize(8.5);doc.setFont('helvetica','bold');
-  doc.text(t.toUpperCase(),x+6,y);
+const COLORS={
+  ach:{h:[192,57,43],light:[253,242,240],subbar:[245,245,242],subtext:[80,80,80],sectionbg:[245,242,242],sectiontext:[192,57,43],badge:'PROCESSED'},
+  wire:{h:[26,86,160],light:[235,245,251],subbar:[235,245,251],subtext:[20,63,114],sectionbg:[235,245,251],sectiontext:[26,86,160],badge:'SUCCESSFUL'},
+  corpay:{h:[26,107,60],light:[233,247,239],subbar:[233,247,239],subtext:[20,80,45],sectionbg:[233,247,239],sectiontext:[26,107,60],badge:'CONFIRMED'}
+};
+
+function pdfHeader(doc,co,W,M,type,right_label){
+  const C=COLORS[type];
+  doc.setFillColor(...C.h);doc.rect(0,0,W,60,'F');
+  if(logoDataUrl){
+    try{doc.addImage(logoDataUrl,'PNG',M,8,44,44);}catch(e){}
+    doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont('helvetica','bold');
+    doc.text(co,M+54,30);
+    doc.setFontSize(9);doc.setFont('helvetica','normal');
+    doc.text(right_label,W-M,30,{align:'right'});
+    doc.setFontSize(8);doc.text('GREAT TALENT, BETTER RESULTS',M+54,44);
+  }else{
+    doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont('helvetica','bold');
+    doc.text(co,M,35);
+    doc.setFontSize(9);doc.setFont('helvetica','normal');
+    doc.text(right_label,W-M,35,{align:'right'});
+  }
 }
-function fld(doc,l,v,x,y,mw){
+function pdfSubbar(doc,left,center,right,W,M,type){
+  const C=COLORS[type];
+  doc.setFillColor(...C.subbar);doc.rect(0,60,W,26,'F');
+  doc.setTextColor(...C.subtext);doc.setFontSize(8.5);
+  doc.text(left,M,77);
+  doc.text(center,W/2,77,{align:'center'});
+  doc.text(right,W-M,77,{align:'right'});
+}
+function pdfSection(doc,title,x,y,w,type){
+  const C=COLORS[type];
+  doc.setFillColor(...C.sectionbg);doc.rect(x,y-11,w,17,'F');
+  doc.setTextColor(...C.sectiontext);doc.setFontSize(8.5);doc.setFont('helvetica','bold');
+  doc.text(title.toUpperCase(),x+6,y);
+}
+function pdfField(doc,l,v,x,y,mw){
   doc.setTextColor(130,130,130);doc.setFontSize(8);doc.setFont('helvetica','normal');
-  doc.text(l,x,y);
+  doc.text(String(l),x,y);
   doc.setTextColor(30,30,30);doc.setFontSize(10.5);doc.setFont('helvetica','bold');
-  doc.text(doc.splitTextToSize(String(v),mw),x,y+13);
+  doc.text(doc.splitTextToSize(String(v||''),mw),x,y+13);
 }
-function amountBox(doc,r,b,M,y,W,type){
-  const isWire=type==='wire';
-  const fillRgb=isWire?[235,245,251]:[253,242,240];
-  const strokeRgb=isWire?[26,86,160]:[192,57,43];
-  const textRgb=isWire?[26,86,160]:[192,57,43];
-  doc.setFillColor(...fillRgb);doc.roundedRect(M,y,W-M*2,64,6,6,'F');
-  doc.setDrawColor(...strokeRgb);doc.setLineWidth(0.5);doc.roundedRect(M,y,W-M*2,64,6,6,'S');
-  doc.setTextColor(...textRgb);doc.setFontSize(10);doc.setFont('helvetica','normal');
-  doc.text('Amount Sent',W/2,y+20,{align:'center'});
-  doc.setFontSize(26);doc.setFont('helvetica','bold');
-  doc.text(`${fmt(r.amount)} ${b.currency||'USD'}`,W/2,y+50,{align:'center'});
+function pdfAmountBox(doc,line1,line2,line3,M,y,W,type){
+  const C=COLORS[type];
+  doc.setFillColor(...C.light);doc.roundedRect(M,y,W-M*2,line2?76:64,6,6,'F');
+  doc.setDrawColor(...C.h);doc.setLineWidth(0.5);doc.roundedRect(M,y,W-M*2,line2?76:64,6,6,'S');
+  doc.setTextColor(...C.h);
+  doc.setFontSize(9);doc.setFont('helvetica','normal');
+  doc.text(line1,W/2,y+18,{align:'center'});
+  doc.setFontSize(24);doc.setFont('helvetica','bold');
+  doc.text(line2||'',W/2,y+46,{align:'center'});
+  if(line3){doc.setFontSize(13);doc.setFont('helvetica','normal');doc.text(line3,W/2,y+64,{align:'center'});}
 }
-function statusBadge(doc,W,y,type){
-  const isWire=type==='wire';
-  const rgb=isWire?[26,86,160]:[192,57,43];
-  doc.setFillColor(...rgb);doc.roundedRect(W/2-46,y,92,22,4,4,'F');
+function pdfStatusBadge(doc,label,W,y,type){
+  const C=COLORS[type];
+  doc.setFillColor(...C.h);doc.roundedRect(W/2-50,y,100,22,4,4,'F');
   doc.setTextColor(255,255,255);doc.setFontSize(8.5);doc.setFont('helvetica','bold');
-  doc.text(isWire?'SUCCESSFUL':'PROCESSED',W/2,y+14,{align:'center'});
+  doc.text(label,W/2,y+14,{align:'center'});
 }
-function footer(doc,M,W){
+function pdfFooter(doc,M,W){
   doc.setDrawColor(210,210,210);doc.setLineWidth(0.3);doc.line(M,748,W-M,748);
   doc.setTextColor(160,160,160);doc.setFontSize(7.5);doc.setFont('helvetica','normal');
   doc.text('Fast Dolphin, Inc. · Automated payment receipt · Contact your payment administrator with questions.',W/2,760,{align:'center'});
+}
+
+/* ── PDF: ACH ── */
+function mkACHpdf(r,b){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'pt',format:'letter'});
+  const W=612,M=48,co=CONFIG.COMPANY_NAME;
+  pdfHeader(doc,co,W,M,'ach','ACH PAYMENT RECEIPT');
+  pdfSubbar(doc,`Batch: ${b.batch_id||''}`,`Payment Date: ${b.payment_date||''}`,`Generated: ${new Date().toLocaleDateString('en-US')}`,W,M,'ach');
+  let y=104;
+  pdfSection(doc,'Payment Details',M,y,W-M*2,'ach');y+=22;
+  [['Originating Account',b.originating_account||''],['Company ID',b.company_id||''],
+   ['ACH Type',b.ach_type||''],['Description',b.payment_description||'']]
+  .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;if(i%2===0&&i>0)y+=38;pdfField(doc,l,v,col,y,W/2-M-16);});y+=52;
+  doc.setDrawColor(...COLORS.ach.h);doc.setLineWidth(0.5);doc.line(M,y,W-M,y);y+=16;
+  pdfSection(doc,'Recipient Details',M,y,W-M*2,'ach');y+=22;
+  [['Recipient Name',r.name||''],['Account Number','****'+String(r.account_number||'').slice(-4)],
+   ['Bank Routing',r.bank_routing||''],['Account Type',r.account_type||''],
+   ['Reference / Addenda',r.addenda||'']]
+  .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;if(i%2===0&&i>0)y+=38;pdfField(doc,l,v,col,y,W/2-M-16);});y+=52;
+  pdfAmountBox(doc,'Amount Sent',`${fmt(r.amount)} ${b.currency||'USD'}`,null,M,y,W,'ach');y+=80;
+  pdfStatusBadge(doc,'PROCESSED',W,y,'ach');
+  pdfFooter(doc,M,W);
+  return doc.output('arraybuffer');
+}
+
+/* ── PDF: Wire ── */
+function mkWirepdf(r,b){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'pt',format:'letter'});
+  const W=612,M=48,co=CONFIG.COMPANY_NAME;
+  pdfHeader(doc,co,W,M,'wire','WIRE TRANSFER RECEIPT');
+  pdfSubbar(doc,`Payment ID: ${r.payment_id||''}`,`Value Date: ${r.value_date||b.payment_date||''}`,`Generated: ${new Date().toLocaleDateString('en-US')}`,W,M,'wire');
+  let y=104;
+  pdfSection(doc,'Confirmation',M,y,W-M*2,'wire');y+=22;
+  [['SWIFT Confirmation',r.swift_confirmation||''],['TRN',r.trn_confirmation||''],
+   ['Payment ID',r.payment_id||''],['Value Date',r.value_date||b.payment_date||'']]
+  .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;if(i%2===0&&i>0)y+=38;pdfField(doc,l,v,col,y,W/2-M-16);});y+=52;
+  doc.setDrawColor(...COLORS.wire.h);doc.setLineWidth(0.5);doc.line(M,y,W-M,y);y+=16;
+  pdfSection(doc,'Beneficiary Details',M,y,W-M*2,'wire');y+=22;
+  [['Beneficiary Name',r.name||''],['Account Number',r.account_number||''],
+   ['Address',r.address||''],['Country',r.country||'']]
+  .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;if(i%2===0&&i>0)y+=38;pdfField(doc,l,v,col,y,W/2-M-16);});y+=52;
+  doc.setDrawColor(...COLORS.wire.h);doc.setLineWidth(0.5);doc.line(M,y,W-M,y);y+=16;
+  pdfSection(doc,'Beneficiary Bank',M,y,W-M*2,'wire');y+=22;
+  [['Bank Name',r.bank_name||''],['BIC / SWIFT',r.bank_bic||''],
+   ['Bank Address',r.bank_address||''],['Purpose',r.purpose||'']]
+  .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;if(i%2===0&&i>0)y+=38;pdfField(doc,l,v,col,y,W/2-M-16);});y+=52;
+  pdfAmountBox(doc,'Amount Sent',`${fmt(r.amount)} ${b.currency||'USD'}`,null,M,y,W,'wire');y+=80;
+  pdfStatusBadge(doc,'SUCCESSFUL',W,y,'wire');
+  pdfFooter(doc,M,W);
+  return doc.output('arraybuffer');
+}
+
+/* ── PDF: Corpay ── */
+function mkCorpaypdf(r,b){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'pt',format:'letter'});
+  const W=612,M=48,co=CONFIG.COMPANY_NAME;
+  pdfHeader(doc,co,W,M,'corpay','CORPAY PAYMENT RECEIPT');
+  pdfSubbar(doc,`Deal: ${b.deal_number||''}`,`Date: ${b.deal_date||''}`,`Generated: ${new Date().toLocaleDateString('en-US')}`,W,M,'corpay');
+  let y=104;
+  pdfSection(doc,'Deal Details',M,y,W-M*2,'corpay');y+=22;
+  [['Deal Number',b.deal_number||''],['Date Booked',b.deal_date||''],
+   ['FX Rate',b.fx_rate||''],['Total USD Cost',`${fmt(b.total_usd_cost)} USD`]]
+  .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;if(i%2===0&&i>0)y+=38;pdfField(doc,l,v,col,y,W/2-M-16);});y+=52;
+  doc.setDrawColor(...COLORS.corpay.h);doc.setLineWidth(0.5);doc.line(M,y,W-M,y);y+=16;
+  pdfSection(doc,'Recipient Details',M,y,W-M*2,'corpay');y+=22;
+  [['Recipient Name',r.name||''],['Beneficiary Account',r.beneficiary_account||''],
+   ['Address',r.address||''],['Country',r.country||'']]
+  .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;if(i%2===0&&i>0)y+=38;pdfField(doc,l,v,col,y,W/2-M-16);});y+=52;
+  doc.setDrawColor(...COLORS.corpay.h);doc.setLineWidth(0.5);doc.line(M,y,W-M,y);y+=16;
+  pdfSection(doc,'Beneficiary Bank',M,y,W-M*2,'corpay');y+=22;
+  [['Bank Name',r.beneficiary_bank||''],['BIC',r.bic||''],
+   ['Payment Reference',r.payment_reference||''],['Method',r.method||'WIRE']]
+  .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;if(i%2===0&&i>0)y+=38;pdfField(doc,l,v,col,y,W/2-M-16);});y+=52;
+  // Dual amount box
+  pdfAmountBox(doc,'Amount Sent',`${fmt(r.usd_cost)} USD`,`${fmt(r.local_amount)} ${r.local_currency||'MXN'} received`,M,y,W,'corpay');y+=94;
+  pdfStatusBadge(doc,'CONFIRMED',W,y,'corpay');
+  pdfFooter(doc,M,W);
+  return doc.output('arraybuffer');
 }
 
 /* ── Gmail send ── */
@@ -610,7 +681,6 @@ async function sendAll(){
   const btn=document.getElementById('sbtn');btn.disabled=true;
   const tpl=document.getElementById('esubj').value||'Payment Receipt';
   const customBody=document.getElementById('ebody').value.trim();
-  const isWire=docType==='wire';
   const recs=batch.recipients.map(r=>({...r,contact:findC(r.name)}));
   const wrap=document.getElementById('sstatus');
   wrap.innerHTML='<div>'+recs.map((r,i)=>`
@@ -624,16 +694,28 @@ async function sendAll(){
     const r=recs[i];dot(i,'spin');
     if(!r.contact?.email){dot(i,'err');msg(i,'Skipped — no email');failed++;continue;}
     try{
-      const pdfBuf=isWire?mkWirepdf(r,batch):mkACHpdf(r,batch);
-      const dateStr=isWire?(r.value_date||batch.payment_date||''):(batch.payment_date||'');
-      const pidStr=isWire?(r.payment_id||''):(batch.batch_id||'');
-      const subj=tpl.replace('{name}',r.name).replace('{amount}',fmt(r.amount)).replace('{date}',dateStr).replace('{payment_id}',pidStr);
-      const prefix=isWire?'Wire':'ACH';
+      let pdfBuf;
+      if(docType==='wire') pdfBuf=mkWirepdf(r,batch);
+      else if(docType==='corpay') pdfBuf=mkCorpaypdf(r,batch);
+      else pdfBuf=mkACHpdf(r,batch);
+
+      const dateStr=docType==='corpay'?batch.deal_date:docType==='wire'?(r.value_date||batch.payment_date||''):batch.payment_date||'';
+      const pidStr=docType==='corpay'?batch.deal_number:docType==='wire'?(r.payment_id||''):batch.batch_id||'';
+      const amtStr=docType==='corpay'?fmt(r.usd_cost):fmt(r.amount);
+      const subj=tpl.replace('{name}',r.name).replace('{amount}',amtStr).replace('{date}',dateStr).replace('{payment_id}',pidStr);
+      const prefix={ach:'ACH',wire:'Wire',corpay:'Corpay'}[docType];
       const fname=`${prefix}_Receipt_${r.name.replace(/\s+/g,'_')}_${dateStr.replace(/\//g,'-')}.pdf`;
-      const body=customBody||(isWire?
-        `Dear ${r.name},\n\nPlease find attached your wire transfer receipt for ${fmt(r.amount)} ${batch.currency||'USD'}.\n\nPayment ID: ${r.payment_id||''}\nSWIFT: ${r.swift_confirmation||''}\nTRN: ${r.trn_confirmation||''}\nValue Date: ${r.value_date||''}\nPurpose: ${r.purpose||''}\n\nFor questions, please contact us.\n\nFast Dolphin, Inc.`
-        :`Dear ${r.name},\n\nPlease find attached your ACH payment receipt for ${fmt(r.amount)} ${batch.currency||'USD'} processed on ${batch.payment_date||''}.\n\nPayment Reference: ${batch.batch_id||''}\nAddenda: ${r.addenda||''}\n\nFor questions, please contact us.\n\nFast Dolphin, Inc.`
-      );
+
+      let body=customBody;
+      if(!body){
+        if(docType==='corpay'){
+          body=`Dear ${r.name},\n\nPlease find attached your Corpay payment receipt.\n\nDeal Number: ${batch.deal_number||''}\nDate: ${batch.deal_date||''}\nUSD Cost: ${fmt(r.usd_cost)} USD\nAmount Received: ${fmt(r.local_amount)} ${r.local_currency||'MXN'}\nFX Rate: ${batch.fx_rate||''}\nPayment Reference: ${r.payment_reference||''}\n\nFor questions, please contact us.\n\nFast Dolphin, Inc.`;
+        } else if(docType==='wire'){
+          body=`Dear ${r.name},\n\nPlease find attached your wire transfer receipt for ${fmt(r.amount)} ${batch.currency||'USD'}.\n\nPayment ID: ${r.payment_id||''}\nSWIFT: ${r.swift_confirmation||''}\nTRN: ${r.trn_confirmation||''}\nValue Date: ${r.value_date||''}\nPurpose: ${r.purpose||''}\n\nFor questions, please contact us.\n\nFast Dolphin, Inc.`;
+        } else {
+          body=`Dear ${r.name},\n\nPlease find attached your ACH payment receipt for ${fmt(r.amount)} ${batch.currency||'USD'} processed on ${batch.payment_date||''}.\n\nPayment Reference: ${batch.batch_id||''}\nAddenda: ${r.addenda||''}\n\nFor questions, please contact us.\n\nFast Dolphin, Inc.`;
+        }
+      }
       await gmailSend(r.contact.email,subj,body,pdfBuf,fname);
       dot(i,'ok');msg(i,'Sent ✓');sent++;
     }catch(e){dot(i,'err');msg(i,e.message);failed++;}
