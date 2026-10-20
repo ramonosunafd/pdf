@@ -67,7 +67,8 @@ tr:last-child td{border-bottom:none}
 .type-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;margin-bottom:12px}
 .type-ach{background:#FDECEA;color:#922B21}
 .type-wire{background:#EBF5FB;color:#154360}
-.type-corpay{background:#E9F7EF;color:#1A6B3C}
+.btn-orange{background:#D35400;color:#fff}
+.type-itau{background:#FEF0E7;color:#A04000}
 </style>
 </head>
 <body>
@@ -80,7 +81,7 @@ tr:last-child td{border-bottom:none}
         <img id="header-logo" src="" alt="Fast Dolphin" style="height:48px;display:none">
         <div>
           <h1>Payment Receipt Sender</h1>
-          <p class="sub">Fast Dolphin, Inc. · ACH · Wire · Corpay — Send individual receipts via Gmail</p>
+          <p class="sub">Fast Dolphin, Inc. · ACH · Wire · Corpay · Itaú — Send individual receipts via Gmail</p>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
@@ -108,14 +109,15 @@ tr:last-child td{border-bottom:none}
       <h2>1 &nbsp;Upload Payment PDF</h2>
       <p style="font-size:13px;color:#666;margin-bottom:12px">
         Supports <span style="color:#C0392B;font-weight:600">ACH</span>,
-        <span style="color:#1A56A0;font-weight:600">Wire</span>, and
-        <span style="color:#1A6B3C;font-weight:600">Corpay</span> reports — auto-detected.
+        <span style="color:#1A56A0;font-weight:600">Wire</span>,
+        <span style="color:#1A6B3C;font-weight:600">Corpay</span>, and
+        <span style="color:#D35400;font-weight:600">Itaú</span> reports — auto-detected.
       </p>
       <div class="drop-zone" id="dz" ondragover="dv(event,1)" ondragleave="dv(event,0)" ondrop="dd(event)">
         <input type="file" accept=".pdf" onchange="fp(event)">
         <div style="font-size:28px;margin-bottom:8px">📄</div>
         <div style="font-size:14px;color:#555">Drop PDF here or click to browse</div>
-        <div style="font-size:12px;color:#999;margin-top:4px">Wells Fargo ACH, Wells Fargo Wire, or Corpay Spot Deal Confirmation</div>
+        <div style="font-size:12px;color:#999;margin-top:4px">Wells Fargo ACH, Wells Fargo Wire, Corpay Spot Deal, or Itaú Comprovante</div>
       </div>
       <div id="ps"></div>
       <div class="div"></div>
@@ -310,7 +312,9 @@ async function go(file){
 
     // Auto-detect document type
     const tl=txt.toLowerCase();
-    if(tl.includes('corpay')||tl.includes('cambridge mercantile')||tl.includes('spot deal')){
+    if(tl.includes('comprovante de transferência')||tl.includes('comprovante de transferencia')||tl.includes('sispag')||tl.includes('itaú')||tl.includes('itau unibanco')){
+      docType='itau';
+    } else if(tl.includes('corpay')||tl.includes('cambridge mercantile')||tl.includes('spot deal')){
       docType='corpay';
     } else if(tl.includes('wire')&&(tl.includes('beneficiary')||tl.includes('payment id'))){
       docType='wire';
@@ -318,7 +322,7 @@ async function go(file){
       docType='ach';
     }
 
-    ss('ps','i',`<span class="spin"></span>Parsing ${docType.toUpperCase()} document with AI...`);
+    ss('ps','i',`<span class="spin"></span>Parsing ${docType==='itau'?'Itaú':docType.toUpperCase()} document with AI...`);
     await parse(txt);
   }catch(e){ss('ps','e','Extraction failed: '+e.message);}
 }
@@ -328,7 +332,51 @@ async function parse(text){
   let prompt='';
   let maxTokens=2000;
 
-  if(docType==='corpay'){
+  if(docType==='itau'){
+    maxTokens=4000;
+    prompt=`Extract all payment data from this Itaú bank document (Comprovante de Transferência / Comprovante de Operação).
+Return ONLY valid JSON — no markdown, no explanation.
+
+The document may contain multiple pages. Each page is one payment. Extract ALL of them.
+
+{
+  "payment_date": "",
+  "payer_name": "FAST DOLPHIN LTDA",
+  "payer_account": "",
+  "currency": "BRL",
+  "recipients": [
+    {
+      "seq": 1,
+      "doc_type": "pix",
+      "name": "",
+      "cnpj": "",
+      "pix_key": "",
+      "institution": "",
+      "account": "",
+      "account_type": "",
+      "amount": "",
+      "transfer_date": "",
+      "payment_type": "",
+      "message": "",
+      "transaction_id": "",
+      "authentication": ""
+    }
+  ]
+}
+
+Rules:
+- For doc_type: use "pix" for PIX TRANSFERENCIA, "titulo" for Títulos/Boleto payments.
+- For name: use "nome do recebedor" or "nome do favorecido".
+- For amount: extract the numeric value from "valor" or "valor pago" — use Brazilian format as-is (e.g. "113.150,16").
+- For message: use "mensagem ao recebedor" or "informações fornecidas pelo pagador".
+- For pix_key: use "chave" field if present.
+- For account: use "agência/conta" of the recipient if present.
+- Keep all strings concise (under 80 chars).
+- Extract ALL recipients from ALL pages (up to 20).
+
+REPORT TEXT:
+${text.slice(0,12000)}`;
+  } else if(docType==='corpay'){
     maxTokens=6000;
     prompt=`Extract all payment data from this Corpay Spot Deal Confirmation.
 Return ONLY valid JSON — no markdown, no explanation. Be concise — short strings only, no long addresses.
@@ -436,16 +484,23 @@ function renderBatch(){
   const b=batch;
 
   // Type indicator
-  const pills={ach:'🔴 ACH Payment',wire:'🔵 Wire Transfer',corpay:'🟢 Corpay'};
-  const pillCls={ach:'type-ach',wire:'type-wire',corpay:'type-corpay'};
+  const pills={ach:'🔴 ACH Payment',wire:'🔵 Wire Transfer',corpay:'🟢 Corpay',itau:'🟠 Itaú'};
+  const pillCls={ach:'type-ach',wire:'type-wire',corpay:'type-corpay',itau:'type-itau'};
   document.getElementById('type-indicator').innerHTML=`<div class="type-pill ${pillCls[docType]}">${pills[docType]}</div>`;
 
   // Send button color
-  const btnCls={ach:'btn-red',wire:'btn-blue',corpay:'btn-green'};
+  const btnCls={ach:'btn-red',wire:'btn-blue',corpay:'btn-green',itau:'btn-orange'};
   document.getElementById('sbtn').className=`btn ${btnCls[docType]}`;
 
   // Header info
-  if(docType==='corpay'){
+  if(docType==='itau'){
+    document.getElementById('hinfo').innerHTML=`
+      <div><div class="hl">Payment date</div><div class="hv">${x(b.payment_date)}</div></div>
+      <div><div class="hl">Payer</div><div class="hv">${x(b.payer_name||CONFIG.COMPANY_NAME)}</div></div>
+      <div><div class="hl">Payer account</div><div class="hv">${x(b.payer_account)}</div></div>
+      <div><div class="hl">Currency</div><div class="hv">BRL</div></div>
+      <div><div class="hl">Recipients</div><div class="hv">${b.recipients.length}</div></div>`;
+  } else if(docType==='corpay'){
     document.getElementById('hinfo').innerHTML=`
       <div><div class="hl">Deal Number</div><div class="hv">${x(b.deal_number)}</div></div>
       <div><div class="hl">Date</div><div class="hv">${x(b.deal_date)}</div></div>
@@ -480,10 +535,12 @@ function renderBatch(){
     let amountCell='';
     if(docType==='corpay'){
       amountCell=`<strong>${fmt(r.usd_cost)} USD</strong><br><span style="font-size:11px;color:#666">${fmt(r.local_amount)} ${x(r.local_currency)}</span>`;
+    } else if(docType==='itau'){
+      amountCell=`<strong>R$ ${x(r.amount)}</strong>`;
     } else {
       amountCell=`<strong>${fmt(r.amount)} ${x(b.currency||'USD')}</strong>`;
     }
-    const col3=docType==='ach'?x(r.addenda||''):x(r.payment_reference||r.purpose||r.addenda||'');
+    const col3=docType==='ach'?x(r.addenda||''):docType==='itau'?x(r.message||''):x(r.payment_reference||r.purpose||r.addenda||'');
     const tr=document.createElement('tr');
     tr.innerHTML=`<td>${r.seq}</td><td>${x(r.name)}</td><td>${amountCell}</td><td>${col3}</td>
       <td>${c?`<span class="badge b-ok">✓ ${x(c.email)}</span>`:`<span class="badge b-err">No email</span>`}</td>`;
@@ -494,8 +551,8 @@ function renderBatch(){
     ?`<div class="alert">⚠ No email for: <strong>${unmatched.join(', ')}</strong>. Add them in Recipient List tab.</div>`:'';
 
   // Subject default
-  const dateStr=docType==='corpay'?b.deal_date:docType==='wire'?(b.payment_date||b.recipients[0]?.value_date||''):b.payment_date||'';
-  const typeLabel={ach:'ACH',wire:'Wire',corpay:'Corpay'}[docType];
+  const dateStr=docType==='corpay'?b.deal_date:docType==='itau'?b.payment_date:docType==='wire'?(b.payment_date||b.recipients[0]?.value_date||''):b.payment_date||'';
+  const typeLabel={ach:'ACH',wire:'Wire',corpay:'Corpay',itau:'Itau'}[docType];
   document.getElementById('esubj').value=`${typeLabel} Payment Receipt - ${dateStr}`;
   document.getElementById('parsed').style.display='';
 }
@@ -509,9 +566,10 @@ function fmt(val){
 
 /* ── shared PDF helpers ── */
 const COLORS={
-  ach:{h:[192,57,43],light:[253,242,240],subbar:[245,245,242],subtext:[80,80,80],sectionbg:[245,242,242],sectiontext:[192,57,43],badge:'PROCESSED'},
-  wire:{h:[26,86,160],light:[235,245,251],subbar:[235,245,251],subtext:[20,63,114],sectionbg:[235,245,251],sectiontext:[26,86,160],badge:'SUCCESSFUL'},
-  corpay:{h:[26,107,60],light:[233,247,239],subbar:[233,247,239],subtext:[20,80,45],sectionbg:[233,247,239],sectiontext:[26,107,60],badge:'CONFIRMED'}
+  ach:   {h:[192,57,43], light:[253,242,240],subbar:[245,245,242],subtext:[80,80,80],  sectionbg:[245,242,242],sectiontext:[192,57,43], badge:'PROCESSED'},
+  wire:  {h:[26,86,160], light:[235,245,251],subbar:[235,245,251],subtext:[20,63,114], sectionbg:[235,245,251],sectiontext:[26,86,160],  badge:'SUCCESSFUL'},
+  corpay:{h:[26,107,60], light:[233,247,239],subbar:[233,247,239],subtext:[20,80,45],  sectionbg:[233,247,239],sectiontext:[26,107,60],  badge:'CONFIRMED'},
+  itau:  {h:[211,84,0],  light:[254,245,235],subbar:[254,245,235],subtext:[120,45,0],  sectionbg:[254,245,235],sectiontext:[211,84,0],   badge:'EFETUADO'}
 };
 
 function pdfHeader(doc,co,W,M,type,right_label){
@@ -651,7 +709,58 @@ function mkCorpaypdf(r,b){
   return doc.output('arraybuffer');
 }
 
-/* ── Gmail send ── */
+/* ── PDF: Itaú ── */
+function mkItaupdf(r,b){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'pt',format:'letter'});
+  const W=612,M=48,co=CONFIG.COMPANY_NAME;
+  const istitulo=r.doc_type==='titulo';
+  const label=istitulo?'ITAÚ - COMPROVANTE DE OPERAÇÃO':'ITAÚ - COMPROVANTE DE TRANSFERÊNCIA';
+  pdfHeader(doc,co,W,M,'itau',label);
+  pdfSubbar(doc,
+    `Data: ${r.transfer_date||b.payment_date||''}`,
+    `Tipo: ${r.payment_type||'PIX TRANSFERENCIA'}`,
+    `Generated: ${new Date().toLocaleDateString('en-US')}`,
+    W,M,'itau');
+  let y=104;
+
+  // Payer section
+  pdfSection(doc,'Dados do Pagador',M,y,W-M*2,'itau');y+=22;
+  [['Nome',b.payer_name||CONFIG.COMPANY_NAME],['Agência/Conta',b.payer_account||'']]
+  .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;pdfField(doc,l,v,col,y,W/2-M-16);});y+=52;
+  doc.setDrawColor(...COLORS.itau.h);doc.setLineWidth(0.5);doc.line(M,y,W-M,y);y+=16;
+
+  // Recipient section
+  pdfSection(doc,'Dados do Recebedor',M,y,W-M*2,'itau');y+=22;
+  if(istitulo){
+    [['Nome do Favorecido',r.name||''],['CNPJ',r.cnpj||''],
+     ['Instituição',r.institution||''],['Vencimento',r.transfer_date||'']]
+    .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;if(i%2===0&&i>0)y+=38;pdfField(doc,l,v,col,y,W/2-M-16);});
+  } else {
+    [['Nome do Recebedor',r.name||''],['CNPJ/CPF',r.cnpj||''],
+     ['Chave PIX',r.pix_key||''],['Instituição',r.institution||''],
+     ['Agência/Conta',r.account||''],['Tipo de Conta',r.account_type||'']]
+    .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;if(i%2===0&&i>0)y+=38;pdfField(doc,l,v,col,y,W/2-M-16);});
+  }
+  y+=52;
+  doc.setDrawColor(...COLORS.itau.h);doc.setLineWidth(0.5);doc.line(M,y,W-M,y);y+=16;
+
+  // Transaction section
+  pdfSection(doc,'Dados da Transação',M,y,W-M*2,'itau');y+=22;
+  [['Referência / Mensagem',r.message||''],['ID da Transação',r.transaction_id||''],
+   ['Autenticação',r.authentication||''],['Data da Transferência',r.transfer_date||b.payment_date||'']]
+  .forEach(([l,v],i)=>{const col=i%2===0?M:W/2+16;if(i%2===0&&i>0)y+=38;pdfField(doc,l,v,col,y,W/2-M-16);});
+  y+=52;
+
+  // Amount box — BRL amounts use Brazilian format, show as-is
+  const amtDisplay=`R$ ${r.amount||''}`;
+  pdfAmountBox(doc,'Valor Transferido',amtDisplay,null,M,y,W,'itau');y+=80;
+  pdfStatusBadge(doc,'EFETUADO',W,y,'itau');
+  pdfFooter(doc,M,W);
+  return doc.output('arraybuffer');
+}
+
+
 async function gmailSend(to,subject,bodyText,pdfBuf,filename){
   if(!accessToken)throw new Error('Not signed in — click Sign in with Google');
   const boundary='fdreceipt_'+Date.now();
@@ -698,6 +807,7 @@ async function sendAll(){
       let pdfBuf;
       if(docType==='wire') pdfBuf=mkWirepdf(r,batch);
       else if(docType==='corpay') pdfBuf=mkCorpaypdf(r,batch);
+      else if(docType==='itau') pdfBuf=mkItaupdf(r,batch);
       else pdfBuf=mkACHpdf(r,batch);
 
       const dateStr=docType==='corpay'?batch.deal_date:docType==='wire'?(r.value_date||batch.payment_date||''):batch.payment_date||'';
@@ -709,7 +819,9 @@ async function sendAll(){
 
       let body=customBody;
       if(!body){
-        if(docType==='corpay'){
+        if(docType==='itau'){
+          body=`Prezado(a) ${r.name},\n\nSegue em anexo o comprovante de pagamento via ${r.payment_type||'PIX'}.\n\nValor: R$ ${r.amount}\nData: ${r.transfer_date||batch.payment_date||''}\nReferência: ${r.message||''}\nID da Transação: ${r.transaction_id||''}\n\nEm caso de dúvidas, entre em contato conosco.\n\n${CONFIG.COMPANY_NAME}`;
+        } else if(docType==='corpay'){
           body=`Dear ${r.name},\n\nPlease find attached your Corpay payment receipt.\n\nDeal Number: ${batch.deal_number||''}\nDate: ${batch.deal_date||''}\nUSD Cost: ${fmt(r.usd_cost)} USD\nAmount Received: ${fmt(r.local_amount)} ${r.local_currency||'MXN'}\nFX Rate: ${batch.fx_rate||''}\nPayment Reference: ${r.payment_reference||''}\n\nFor questions, please contact us.\n\nFast Dolphin, Inc.`;
         } else if(docType==='wire'){
           body=`Dear ${r.name},\n\nPlease find attached your wire transfer receipt for ${fmt(r.amount)} ${batch.currency||'USD'}.\n\nPayment ID: ${r.payment_id||''}\nSWIFT: ${r.swift_confirmation||''}\nTRN: ${r.trn_confirmation||''}\nValue Date: ${r.value_date||''}\nPurpose: ${r.purpose||''}\n\nFor questions, please contact us.\n\nFast Dolphin, Inc.`;
